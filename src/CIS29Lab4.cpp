@@ -1,8 +1,8 @@
 //============================================================================
-// Name        : Lab3
+// Name        : Lab4
 // Author      : Branden Lee
-// Date        : 5/15/2018
-// Description : Decoding Code3of9 Symbology in XML files with threads
+// Date        : 5/30/2018
+// Description : Encryption and Compression
 //============================================================================
 
 #include <string>
@@ -1016,28 +1016,28 @@ bool Parser::cartListXMLNodetoObject(XMLNode& cartListXMLNode,
 
 /*
  * main & interface
- * Rules For Decoding:
- * - Product and Carts XML are parsed using a generic XML parser
- * - Products are taken from the product XML object and inserted into the product hash table
- * - first 5 letters of product name converted to code39 binary string to use as hash table key
- * - Carts are taken from the cart XML object and reference the product object from the hash table
- * - Cart item code39 binary string used as key for product hash table to find product object
- * - Carts are inserted with product object references into carts list
- * - Carts list calculates the cart price
- * - Carts list converted to a string for writing to a file
+ * Rules For Encoding:
+ * - Read through file and increment ascii character occurrence frequency based on contents
+ * - Generate frequency table with priority queue
+ * - Create binary tree from priority queue
+ * - Encrypt the input file as an encrypted binary file
+ *
+ * Rules For Decoding
+ * - Decrypt the encrypted binary file using the existing priority queue
+ *
  */
 int main() {
 	FileHandler fh;
 	Parser parser;
 	XMLParser xmlparser;
-	string fileNameProducts, fileNameCarts, fileNameCartsList;
+	string fileNameOriginal, fileNameEncrypt, fileNameDecrypt;
 	ifstream fileStreamInProducts, fileStreamInCarts;
 	future<bool> parseProductsXMLFuture, parseCartsXMLFuture;
 	bool flag = false;
-	/* XML input files are here */
-	fileNameProducts = "Products.xml";
-	fileNameCarts = "Carts.xml";
-	fileNameCartsList = "cartsList.txt";
+	/* input/output files are here */
+	fileNameOriginal = "Speech.txt";
+	fileNameEncrypt = "encrypt.data";
+	fileNameDecrypt = "decrypt.txt";
 	// parse XML file streams into an XML document node
 	XMLNode ProductsXML, CartsXML;
 	ProductTable productTable;
