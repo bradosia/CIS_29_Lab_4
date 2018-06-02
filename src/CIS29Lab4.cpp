@@ -7,25 +7,17 @@
 
 #include <string>
 #include <fstream>
-#include <iostream>     // std::cout
+#include <iostream>		// std::cout
 #include <sstream>
 #include <iomanip>
-#include <vector>       // std::vector
-#include <bitset>
-#include <list>
-#include <regex>
+#include <vector>		// std::vector
 #include <stack>
-#include <queue>
+#include <queue>		// std::priority_queue
 #include <cstring>
-#include <thread>
-#include <future>
-#include <mutex>          // std::mutex
+#include <memory>		// std::unique_ptr
 using namespace std;
 
-#define BUFFER_SIZE 256
-#define CART_PROCESSING_THREADS 7
-
-mutex mutexGlobal;           // mutex for critical section
+#define PRIORITY_QUEUE_PARSER_BUFFER_SIZE 256
 
 /**
  @class FileHandler
@@ -75,53 +67,79 @@ public:
 };
 
 /**
- @class XMLNode
- XML document node \n
+ @class CharacterFrequencyNode
+ similar to std::pair<unsigned int, unsigned int> except has that operator< overloaded \n
+ first = frequency \n
+ second = ascii character code \n
  */
-class XMLNode {
-private:
-	string name; // tag name inside the angled brackets <name>
-	string value; // non-child-node inside node <>value</>
-	vector<XMLNode*> childNodes;
-	XMLNode* parentNode;
+class CharacterFrequencyNode {
 public:
-	XMLNode();
-	XMLNode(string name_, XMLNode* parentNode_);
-	~XMLNode() {
+	unsigned int first, second;
+	CharacterFrequencyNode(unsigned int first_, unsigned int second_);
+	bool operator<(const CharacterFrequencyNode &lhs,
+			const CharacterFrequencyNode &rhs) {
+		return lhs.first < rhs.first;
 	}
-	void valueAppend(string str);
-	/* not a comprehensive list of definitions for all getters/setters
-	 * it is not vital to the program to have all setters
-	 */
-	string getName();
-	string getValue();
-	XMLNode* getParent();
-	XMLNode* addChild(string str);
-	XMLNode* getChild(unsigned int index);
-	bool findChild(string name_, XMLNode*& returnNode, unsigned int index);
-	unsigned int childrenSize();
-	unsigned int findChildSize(string name_);
 };
 
 /**
- @class XMLParser
- XML document parser \n
+ @class CharacterPriorityQueueCompare
+ Function object for performing comparisons. Uses operator< on type T. \n
  */
-class XMLParser {
-private:
-	regex tagOpenRegex, tagEndRegex;
-public:
-	XMLParser();
-	~XMLParser() {
+template<class T>
+class CharacterPriorityQueueCompare {
+	bool operator()(const T &lhs, const T &rhs) const {
+		return lhs < rhs;
 	}
-	bool documentStream(istream& streamIn, XMLNode& xmlDoc);
-	bool bufferSearch(string& streamBuffer, XMLNode& xmlDoc,
-			XMLNode*& xmlNodeCurrent, stack<string>& documentStack,
-			unsigned int mode);
-	bool nodePop(string& tagString, XMLNode& xmlDoc, XMLNode*& xmlNodeCurrent,
-			stack<string>& documentStack);
-	bool nodePush(string& tagString, XMLNode& xmlDoc, XMLNode*& xmlNodeCurrent,
-			stack<string>& documentStack);
+};
+
+using priorityQueueType = std::priority_queue<CharacterFrequencyNode, vector<CharacterFrequencyNode>, CharacterPriorityQueueCompare<CharacterFrequencyNode>>;
+
+/**
+ @class CharacterPriorityQueue
+ document -> HashTable -> priority_queue -> set -> binary string \n
+ */
+class CharacterPriorityQueue {
+private:
+	// HashTable<character code, character frequency>
+	HashTable<unsigned int, unsigned int*> characterFrequencyTable;
+	priorityQueueType priorityQueue;
+public:
+	CharacterPriorityQueue();
+	~CharacterPriorityQueue() {
+	}
+	bool fileStreamIn(istream& streamIn);
+	bool bufferHandle(string& streamBuffer);
+	bool PriorityQueueParse();
+	std::unique_ptr<priorityQueueType> priorityQueue();
+};
+
+class CharacterPriorityQueueTreeNode {
+private:
+	CharacterPriorityQueueTreeNode *left, *right;
+	unsigned int characterCode;
+	bool leafFlag;
+public:
+	CharacterPriorityQueueTreeNode();
+};
+
+class CharacterPriorityQueueTree {
+private:
+	// HashTable<character code, character binary string>
+	HashTable<unsigned int, string> characterBinaryTable;
+	CharacterPriorityQueueTreeNode characterPriorityQueueTreeNodeParent;
+public:
+	/*
+	 * Encoding methods
+	 * build CharacterPriorityQueueTree, then build characterBinaryTable
+	 */
+	bool priorityQueue(std::unique_ptr<priorityQueueType> priorityQueuePtr);
+	string characterCodeToCharacterBinaryString(unsigned int characterCode);
+	/*
+	 * Decoding methods
+	 */
+	unsigned int characterBinaryStringToCharacterCode(
+			string characterBinaryString);
 };
 
 /**
@@ -383,85 +401,21 @@ bool HashTable<K, T>::resize(unsigned int key) {
 }
 
 /*
- * XMLNode Implementation
+ * CharacterFrequencyNode Implementation
  */
-XMLNode::XMLNode() {
-	name = "";
-	value = "";
-	parentNode = nullptr;
+CharacterFrequencyNode::CharacterFrequencyNode(unsigned int first_,
+		unsigned int second_) {
+	first = first_;
+	second = second_;
 }
-XMLNode::XMLNode(string name_, XMLNode* parentNode_) {
-	name = name_;
-	value = "";
-	parentNode = parentNode_;
-}
-void XMLNode::valueAppend(string str) {
-	value.append(str);
-}
-string XMLNode::getName() {
-	return name;
-}
-string XMLNode::getValue() {
-	return value;
-}
-XMLNode* XMLNode::getParent() {
-	return parentNode;
-}
-XMLNode* XMLNode::addChild(string str) {
-	XMLNode* childNode = new XMLNode(str, this);
-	childNodes.push_back(childNode);
-	return childNode;
-}
-XMLNode* XMLNode::getChild(unsigned int index) {
-	XMLNode* nodeReturn = nullptr;
-	try {
-		nodeReturn = childNodes.at(index);
-	} catch (...) {
-		// nothing
-	}
-	return nodeReturn;
-}
-bool XMLNode::findChild(string name_, XMLNode*& returnNode,
-		unsigned int index) {
-	unsigned int findCount, i, n;
-	bool returnValue = false;
-	findCount = 0;
-	n = (unsigned int) childNodes.size();
-	for (i = 0; i < n; i++) {
-		if (childNodes[i]->name == name_) {
-			if (findCount == index) {
-				returnNode = childNodes[i];
-				returnValue = true;
-				break;
-			}
-			findCount++;
-		}
-	}
-	return returnValue;
-}
-unsigned int XMLNode::childrenSize() {
-	return (unsigned int) childNodes.size();
-}
-unsigned int XMLNode::findChildSize(string name_) {
-	unsigned int findCount, i, n;
-	findCount = 0;
-	n = (unsigned int) childNodes.size();
-	for (i = 0; i < n; i++) {
-		if (childNodes[i]->name == name_) {
-			findCount++;
-		}
-	}
-	return findCount;
+/*
+ * CharacterPriorityQueue Implementation
+ */
+CharacterPriorityQueue::CharacterPriorityQueue() {
+
 }
 
-/*
- * XMLParser Implementation
- */
-XMLParser::XMLParser() {
-	tagOpenRegex = regex("\\<(.*?)\\>");   // matches an opening tag <tag>
-	tagEndRegex = regex("\\<\\/(.*?)\\>");   // matches an ending tag </tag>
-}
-bool XMLParser::documentStream(istream& streamIn, XMLNode& xmlDoc) {
+bool CharacterPriorityQueue::fileStreamIn(istream& streamIn) {
 	/* Parsing Steps:
 	 * 1. create document node. If stack is empty then document node is the parent.
 	 * 2. grab first <tag> and add push on stack.
@@ -473,11 +427,10 @@ bool XMLParser::documentStream(istream& streamIn, XMLNode& xmlDoc) {
 	unsigned int fileSize, filePos, bufferSize, mode;
 	string streamBuffer;
 	stack<string> documentStack;
-	bufferSize = BUFFER_SIZE;
+	bufferSize = PRIORITY_QUEUE_PARSER_BUFFER_SIZE;
 	fileSize = filePos = mode = 0;
 	streamBuffer = "";
-	XMLNode* xmlNodeCurrent = &xmlDoc;
-	char bufferInChar[BUFFER_SIZE];
+	char bufferInChar[PRIORITY_QUEUE_PARSER_BUFFER_SIZE];
 	streamIn.seekg(0, ios::end); // set the pointer to the end
 	fileSize = (unsigned int) streamIn.tellg(); // get the length of the file
 	streamIn.seekg(0, ios::beg); // set the pointer to the beginning
@@ -490,120 +443,52 @@ bool XMLParser::documentStream(istream& streamIn, XMLNode& xmlDoc) {
 		memset(bufferInChar, 0, sizeof(bufferInChar)); // zero out buffer
 		streamIn.read(bufferInChar, bufferSize);
 		streamBuffer.append(bufferInChar, bufferSize);
-		bufferSearch(streamBuffer, xmlDoc, xmlNodeCurrent, documentStack, mode);
+		bufferHandle(streamBuffer);
 		// advance buffer
 		filePos += bufferSize;
 	}
-	// remaining buffer belongs to current node value
-	xmlNodeCurrent->valueAppend(streamBuffer);
+	// handle the remaining buffer
+	bufferHandle(streamBuffer);
 	return true;
 }
 
-bool XMLParser::bufferSearch(string& streamBuffer, XMLNode& xmlDoc,
-		XMLNode*& xmlNodeCurrent, stack<string>& documentStack,
-		unsigned int mode) {
-	unsigned int ticks = 0;
-	unsigned int tagOpenPos, tagEndPos, noPos;
-	noPos = (unsigned int) string::npos;
-	string tagPop, matchGroupString, temp;
-	while (ticks < 9999) { // infinite loop protection
-		ticks++;
-		if (mode == 0) {
-			tagOpenPos = (unsigned int) streamBuffer.find("<");
-			if (tagOpenPos != noPos) {
-				/* opening angle bracket for a tag
-				 * we assume that text before this is the value of current xml node
-				 */
-				mode = 1;
-				xmlNodeCurrent->valueAppend(streamBuffer.substr(0, tagOpenPos));
-				streamBuffer.erase(0, tagOpenPos);
-				tagOpenPos = 0;
-			} else {
-				break;
-			}
-		} else if (mode == 1) {
-			// expecting ending angle bracket for a tag
-			tagEndPos = (unsigned int) streamBuffer.find(">");
-			temp = streamBuffer.substr(0, tagEndPos + 1);
-			std::smatch m;
-			if (tagEndPos != noPos) {
-				// let's use regex to grab the tag name between the angled brackets
-				// let's first check if we just ended an ending tag </>
-				//std::smatch m;
-				regex_match(temp, m, tagEndRegex);
-				if (!m.empty()) {
-					/* extract matched group
-					 * a .trim() method would be great...
-					 */
-					try {
-						matchGroupString = m[1].str(); // match group
-					} catch (...) {
-						matchGroupString = "";
-					}
-					string s;
-					s.append("</").append(matchGroupString).append("> ").append(
-							streamBuffer).append("\n");
-					//cout << s;
-					nodePop(matchGroupString, xmlDoc, xmlNodeCurrent,
-							documentStack);
-				} else {
-					// now check if we just ended an opening tag <>
-					//std::smatch m;
-					regex_match(temp, m, tagOpenRegex);
-					if (!m.empty()) {
-						try {
-							matchGroupString = m[1].str(); // match group
-						} catch (...) {
-							matchGroupString = "";
-						}
-						string s;
-						s.append("<").append(matchGroupString).append("> ").append(
-								streamBuffer).append("\n");
-						//cout << s;
-						nodePush(matchGroupString, xmlDoc, xmlNodeCurrent,
-								documentStack);
-					}
-				}
-				// erase to the end of the ending angle bracket ">"
-				streamBuffer.erase(0, tagEndPos + 1);
-				mode = 0;
-			} else {
-				break;
-			}
-		}
-	}
-	return true;
-}
-
-bool XMLParser::nodePop(string& tagString, XMLNode& xmlDoc,
-		XMLNode*& xmlNodeCurrent, stack<string>& documentStack) {
-	/* pop nodes off stack until end tag is found
-	 * can't go higher than the document root
+bool CharacterPriorityQueue::bufferHandle(string& streamBuffer) {
+	/* characters are placed into a hash table
+	 * hashTable[CharacterCode] = CharacterFrequency
 	 */
-	string tagPop = "";
-	if (tagString.length() > 0) {
-		while (!documentStack.empty() && tagPop != tagString) {
-			tagPop = documentStack.top();
-			documentStack.pop();
-			xmlNodeCurrent = xmlNodeCurrent->getParent();
-			if (xmlNodeCurrent == nullptr) {
-				xmlNodeCurrent = &xmlDoc;
-			}
+	unsigned int i, n, characterCode;
+	bool found;
+	unsigned int* characterFrequencyPtr;
+	n = streamBuffer.size();
+	for (i = 0; i < n; i++) {
+		found = false;
+		characterCode =
+				static_cast<unsigned int>(static_cast<int>(streamBuffer[i]));
+		try {
+			// if there was no exception thrown, the character was found
+			characterFrequencyPtr = characterFrequencyTable.at(characterCode);
+			found = true;
+		} catch (...) {
+			// nothing
+		}
+		if (found) {
+			// character exists. increment frequency
+			*characterFrequencyPtr++;
+		} else {
+			characterFrequencyTable.insert(characterCode, new unsigned int(1));
 		}
 	}
+	// there actually is no point to the return, but maybe there will be in the future
 	return true;
 }
 
-bool XMLParser::nodePush(string& tagString, XMLNode& xmlDoc,
-		XMLNode*& xmlNodeCurrent, stack<string>& documentStack) {
-	if (tagString.length() > 0) {
-		documentStack.push(tagString);
-		xmlNodeCurrent = xmlNodeCurrent->addChild(tagString);
-		if (xmlNodeCurrent == nullptr) {
-			xmlNodeCurrent = &xmlDoc;
-		}
-	}
-	return true;
+/*
+ * CharacterPriorityQueueTreeNode Implementation
+ */
+CharacterPriorityQueueTreeNode::CharacterPriorityQueueTreeNode() {
+	left = right = nullptr;
+	characterCode = 0;
+	leafFlag = false;
 }
 
 /*
@@ -906,7 +791,7 @@ void Code39Item::setBinaryString(string binaryString_) {
 	// must have at least one code39 char
 	if (n / 9 > 0 && n % 9 == 0) {
 		for (i = 0; i < n; i++) {
-			bitset<9> bits(binaryString_.substr(i * 9, 9));
+			bitset < 9 > bits(binaryString_.substr(i * 9, 9));
 			intQueue.push((unsigned int) bits.to_ulong());
 		}
 	}
@@ -940,7 +825,7 @@ bool Code39Item::toBinaryString(string& code39CharItem) {
 	if (!intQueue.empty()) {
 		code39CharItem = "";
 		while (!intQueue.empty()) {
-			bitset<9> bits(intQueue.front());
+			bitset < 9 > bits(intQueue.front());
 			code39CharItem.append(bits.to_string());
 			intQueue.pop();
 		}
@@ -1017,7 +902,7 @@ bool Parser::cartListXMLNodetoObject(XMLNode& cartListXMLNode,
 /*
  * main & interface
  * Rules For Encoding:
- * - Read through file and increment ascii character occurrence frequency based on contents
+ * - Read through file and increment character code frequency in a hash table based on contents
  * - Generate frequency table with priority queue
  * - Create binary tree from priority queue
  * - Encrypt the input file as an encrypted binary file
@@ -1029,9 +914,10 @@ bool Parser::cartListXMLNodetoObject(XMLNode& cartListXMLNode,
 int main() {
 	FileHandler fh;
 	Parser parser;
-	XMLParser xmlparser;
+	CharacterPriorityQueue characterPriorityQueue;
 	string fileNameOriginal, fileNameEncrypt, fileNameDecrypt;
-	ifstream fileStreamInProducts, fileStreamInCarts;
+	ifstream fileStreamIn;
+	ofstream fileStreamOut;
 	future<bool> parseProductsXMLFuture, parseCartsXMLFuture;
 	bool flag = false;
 	/* input/output files are here */
@@ -1042,8 +928,7 @@ int main() {
 	XMLNode ProductsXML, CartsXML;
 	ProductTable productTable;
 	CartList cartList;
-	if (!fh.readStream(fileNameProducts, fileStreamInProducts)
-			|| !fh.readStream(fileNameCarts, fileStreamInCarts)) {
+	if (!fh.readStream(fileNameOriginal, fileStreamIn)) {
 		cout << "Could not read either of the input files." << endl;
 	} else {
 		cout << "Parsing XML files..." << endl;
@@ -1051,10 +936,13 @@ int main() {
 		 * because we want to stream the data and decode it as we read.
 		 * This way very large files won't lag or crash the program.
 		 */
-		parseProductsXMLFuture = async(&XMLParser::documentStream, &xmlparser,
-				ref((istream&) fileStreamInProducts), ref(ProductsXML));
-		parseCartsXMLFuture = async(&XMLParser::documentStream, &xmlparser,
-				ref((istream&) fileStreamInCarts), ref(CartsXML));
+		characterPriorityQueue.fileStreamIn(fileStreamIn);
+
+		parseProductsXMLFuture = async(&CharacterPriorityQueue::fileStreamIn,
+				&xmlparser, ref((istream&) fileStreamInProducts),
+				ref(ProductsXML));
+		parseCartsXMLFuture = async(&CharacterPriorityQueue::fileStreamIn,
+				&xmlparser, ref((istream&) fileStreamInCarts), ref(CartsXML));
 		if (parseProductsXMLFuture.get()) {
 			cout
 					<< "Successfully parsed Product List XML File to Product List Nodes."
