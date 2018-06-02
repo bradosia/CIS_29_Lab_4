@@ -5,6 +5,15 @@
 // Description : Encryption and Compression
 //============================================================================
 
+/**
+ * Objectives:
+ * 1. No raw pointers
+ * 	In previous labs I used raw pointers frequently. My labs assume the compiler is "dumb"
+ * 	and does not perform optimizations very well, such as RVO (Return Value Optimization).
+ * 	In this lab I have attempted to use smart pointers and references. I still do not return objects
+ * 	by value even though any modern compiler should optimize this very well.
+ */
+
 #include <string>
 #include <fstream>
 #include <iostream>		// std::cout
@@ -17,6 +26,7 @@
 #include <memory>		// std::unique_ptr
 using namespace std;
 
+/** Buffer size for reading in files for parsing */
 #define PRIORITY_QUEUE_PARSER_BUFFER_SIZE 256
 
 /**
@@ -83,8 +93,8 @@ public:
 };
 
 /**
- @class CharacterPriorityQueueCompare
- Function object for performing comparisons. Uses operator< on type T. \n
+ * @class CharacterPriorityQueueCompare
+ * Function object for performing comparisons. Uses operator< on type T. \n
  */
 template<class T>
 class CharacterPriorityQueueCompare {
@@ -93,25 +103,43 @@ class CharacterPriorityQueueCompare {
 	}
 };
 
+/**
+ * The priority queue type is long so we make it into an alias
+ * using is used rather than typedef because of this forum:
+ * https://stackoverflow.com/questions/10747810/what-is-the-difference-between-typedef-and-using-in-c11
+ */
 using priorityQueueType = std::priority_queue<CharacterFrequencyNode, vector<CharacterFrequencyNode>, CharacterPriorityQueueCompare<CharacterFrequencyNode>>;
 
 /**
- @class CharacterPriorityQueue
- document -> HashTable -> priority_queue -> set -> binary string \n
+ * @class CharacterPriorityQueue
+ * document -> HashTable -> priority_queue -> set -> binary string \n
  */
 class CharacterPriorityQueue {
 private:
-	// HashTable<character code, character frequency>
+	/** HashTable<character code, character frequency> */
 	HashTable<unsigned int, unsigned int*> characterFrequencyTable;
-	priorityQueueType priorityQueue;
+	unique_ptr<priorityQueueType> priorityQueue;
 public:
-	CharacterPriorityQueue();
+	CharacterPriorityQueue() {
+	}
 	~CharacterPriorityQueue() {
 	}
+	/**
+	 * parses document into a character frequency table \n
+	 * Afterward, call <pre>buildPriorityQueue()</pre> to build the priority queue
+	 * @return true on parse success, false on failure
+	 */
 	bool fileStreamIn(istream& streamIn);
 	bool bufferHandle(string& streamBuffer);
-	bool PriorityQueueParse();
-	std::unique_ptr<priorityQueueType> priorityQueue();
+	/**
+	 * builds the priority queue from the character frequency table
+	 * @return true on build success, false on failure
+	 */
+	bool buildPriorityQueue();
+	/**
+	 * @return priority queue reference
+	 */
+	reference_wrapper<priorityQueueType> getPriorityQueue();
 };
 
 class CharacterPriorityQueueTreeNode {
@@ -123,40 +151,64 @@ public:
 	CharacterPriorityQueueTreeNode();
 };
 
+/**
+ @class CharacterPriorityQueueTree
+ Tables to convert character codes to binary strings and back \n
+ */
 class CharacterPriorityQueueTree {
 private:
-	// HashTable<character code, character binary string>
-	HashTable<unsigned int, string> characterBinaryTable;
 	CharacterPriorityQueueTreeNode characterPriorityQueueTreeNodeParent;
 public:
+	CharacterPriorityQueueTree();
 	/*
-	 * Encoding methods
-	 * build CharacterPriorityQueueTree, then build characterBinaryTable
+	 * @param priorityQueuePtr observing pointer
 	 */
-	bool priorityQueue(std::unique_ptr<priorityQueueType> priorityQueuePtr);
-	string characterCodeToCharacterBinaryString(unsigned int characterCode);
-	/*
-	 * Decoding methods
-	 */
-	unsigned int characterBinaryStringToCharacterCode(
-			string characterBinaryString);
+	void buildTree(priorityQueueType* priorityQueuePtr);
+	unique_ptr<HashTable<unsigned int, string>> toCharacterToBinaryTable();
 };
 
 /**
- @class Code39CharTable
- A table to convert Code 39 integers to characters \n
+ @class CharacterToBinaryTable
+ Tables to convert character codes to binary strings and back \n
  */
-class Code39CharTable {
+class CharacterToBinaryTable {
 private:
-	vector<unsigned int> charIntToCode39IntTable;
-	vector<char> Code39IntToCharTable;
+	/** HashTable<character code, character binary string> */
+	unique_ptr<HashTable<unsigned int, string>> characterCodeToBinaryStringTablePtr;
+	/** HashTable<character binary string, character code> */
+	unique_ptr<HashTable<string, unsigned int>> binaryStringToCharacterCodeTablePtr;
+	CharacterPriorityQueueTreeNode characterPriorityQueueTreeNodeParent;
 public:
-	Code39CharTable();
-	~Code39CharTable() {
+	/**
+	 * to keep this class "slim", we will build our table elsewhere and move the pointer
+	 * ownership into this class.
+	 */
+	CharacterToBinaryTable(unique_ptr<HashTable<unsigned int, string>> tablePtr) :
+			characterCodeToBinaryStringTablePtr(move(tablePtr)) {
 	}
-	void buildCode39IntToCharTable();
-	bool intToChar(unsigned int intIn, char& charOut);
-	bool charToInt(char charIn, unsigned int& intOut);
+	CharacterToBinaryTable(unique_ptr<HashTable<string, unsigned int>> tablePtr) :
+			binaryStringToCharacterCodeTablePtr(move(tablePtr)) {
+	}
+	/**
+	 * build the binaryStringToCharacterCodeTable from the characterCodeToBinaryStringTable
+	 */
+	void buildBinaryStringToCharacterCodeTable();
+	/**
+	 * build the characterCodeToBinaryStringTable from the binaryStringToCharacterCodeTable
+	 */
+	void buildCharacterCodeToBinaryStringTable();
+	/**
+	 * Primary encoding method
+	 * @param characterCode Character character code
+	 * @return Character Binary String
+	 */
+	string characterCodeToBinaryString(unsigned int characterCode);
+	/**
+	 * Primary decoding method
+	 * @param characterBinaryString Character Binary String
+	 * @return character code
+	 */
+	unsigned int binaryStringToCharacterCode(string characterBinaryString);
 };
 
 class Product {
@@ -264,21 +316,6 @@ public:
 	void setCodeString(string codeString_);
 	bool toCodeString(string& code39CharItem);
 	bool toBinaryString(string& code39CharItem);
-};
-
-/**
- @class Parser
- Miscellaneous utilities for parsing data structures \n
- */
-class Parser {
-public:
-	Parser();
-	~Parser() {
-	}
-	bool productListXMLNodetoObject(XMLNode& productListXMLNode,
-			ProductTable& productTableObject);
-	bool cartListXMLNodetoObject(XMLNode& cartListXMLNode,
-			CartList& cartListObject, ProductTable& productTableObject);
 };
 
 /*
@@ -411,10 +448,6 @@ CharacterFrequencyNode::CharacterFrequencyNode(unsigned int first_,
 /*
  * CharacterPriorityQueue Implementation
  */
-CharacterPriorityQueue::CharacterPriorityQueue() {
-
-}
-
 bool CharacterPriorityQueue::fileStreamIn(istream& streamIn) {
 	/* Parsing Steps:
 	 * 1. create document node. If stack is empty then document node is the parent.
@@ -482,6 +515,10 @@ bool CharacterPriorityQueue::bufferHandle(string& streamBuffer) {
 	return true;
 }
 
+reference_wrapper<priorityQueueType> CharacterPriorityQueue::getPriorityQueue() {
+	return ref(priorityQueue.get());
+}
+
 /*
  * CharacterPriorityQueueTreeNode Implementation
  */
@@ -492,63 +529,10 @@ CharacterPriorityQueueTreeNode::CharacterPriorityQueueTreeNode() {
 }
 
 /*
- * Code39CharTable Implementation
+ * CharacterToBinaryTable Implementation
  */
-Code39CharTable::Code39CharTable() {
-	// Size of 128 to potentially hold ascii codes up to 128
-	charIntToCode39IntTable.resize(128);
-	try {
-		charIntToCode39IntTable[(unsigned int) ' '] = 196;
-		charIntToCode39IntTable[(unsigned int) '-'] = 133;
-		charIntToCode39IntTable[(unsigned int) '+'] = 138;
-		charIntToCode39IntTable[(unsigned int) '$'] = 168;
-		charIntToCode39IntTable[(unsigned int) '%'] = 42;
-		charIntToCode39IntTable[(unsigned int) '*'] = 148;
-		charIntToCode39IntTable[(unsigned int) '.'] = 388;
-		charIntToCode39IntTable[(unsigned int) '/'] = 162;
-		charIntToCode39IntTable[(unsigned int) '0'] = 52;
-		charIntToCode39IntTable[(unsigned int) '1'] = 289;
-		charIntToCode39IntTable[(unsigned int) '2'] = 97;
-		charIntToCode39IntTable[(unsigned int) '3'] = 352;
-		charIntToCode39IntTable[(unsigned int) '4'] = 49;
-		charIntToCode39IntTable[(unsigned int) '5'] = 304;
-		charIntToCode39IntTable[(unsigned int) '6'] = 112;
-		charIntToCode39IntTable[(unsigned int) '7'] = 37;
-		charIntToCode39IntTable[(unsigned int) '8'] = 292;
-		charIntToCode39IntTable[(unsigned int) '9'] = 100;
-		charIntToCode39IntTable[(unsigned int) 'A'] = 265;
-		charIntToCode39IntTable[(unsigned int) 'B'] = 73;
-		charIntToCode39IntTable[(unsigned int) 'C'] = 328;
-		charIntToCode39IntTable[(unsigned int) 'D'] = 25;
-		charIntToCode39IntTable[(unsigned int) 'E'] = 280;
-		charIntToCode39IntTable[(unsigned int) 'F'] = 88;
-		charIntToCode39IntTable[(unsigned int) 'G'] = 13;
-		charIntToCode39IntTable[(unsigned int) 'H'] = 268;
-		charIntToCode39IntTable[(unsigned int) 'I'] = 76;
-		charIntToCode39IntTable[(unsigned int) 'J'] = 28;
-		charIntToCode39IntTable[(unsigned int) 'K'] = 259;
-		charIntToCode39IntTable[(unsigned int) 'L'] = 67;
-		charIntToCode39IntTable[(unsigned int) 'M'] = 322;
-		charIntToCode39IntTable[(unsigned int) 'N'] = 19;
-		charIntToCode39IntTable[(unsigned int) 'O'] = 274;
-		charIntToCode39IntTable[(unsigned int) 'P'] = 82;
-		charIntToCode39IntTable[(unsigned int) 'Q'] = 7;
-		charIntToCode39IntTable[(unsigned int) 'R'] = 262;
-		charIntToCode39IntTable[(unsigned int) 'S'] = 70;
-		charIntToCode39IntTable[(unsigned int) 'T'] = 22;
-		charIntToCode39IntTable[(unsigned int) 'U'] = 385;
-		charIntToCode39IntTable[(unsigned int) 'V'] = 193;
-		charIntToCode39IntTable[(unsigned int) 'W'] = 448;
-		charIntToCode39IntTable[(unsigned int) 'X'] = 145;
-		charIntToCode39IntTable[(unsigned int) 'Y'] = 400;
-		charIntToCode39IntTable[(unsigned int) 'Z'] = 208;
-	} catch (...) {
-		// nothing
-	}
-	buildCode39IntToCharTable();
-}
 
-void Code39CharTable::buildCode39IntToCharTable() {
+void CharacterToBinaryTable::buildBinaryStringToCharacterCodeTable() {
 	unsigned int i, n, n1;
 	/* extend to lower case characters */
 	n = ((int) 'Z') + 1;
@@ -576,7 +560,8 @@ void Code39CharTable::buildCode39IntToCharTable() {
 	}
 }
 
-bool Code39CharTable::intToChar(unsigned int intIn, char& charOut) {
+string CharacterToBinaryTable::characterCodeToBinaryString(
+		unsigned int characterCode) {
 	bool returnValue = false;
 	try {
 		charOut = Code39IntToCharTable[intIn];
@@ -587,7 +572,8 @@ bool Code39CharTable::intToChar(unsigned int intIn, char& charOut) {
 	return returnValue;
 }
 
-bool Code39CharTable::charToInt(char charIn, unsigned int& intOut) {
+unsigned int CharacterToBinaryTable::binaryStringToCharacterCode(
+		string characterBinaryString) {
 	bool returnValue = false;
 	try {
 		intOut = charIntToCode39IntTable[(unsigned int) charIn];
@@ -835,71 +821,6 @@ bool Code39Item::toBinaryString(string& code39CharItem) {
 }
 
 /*
- * Parser Implementation
- */
-Parser::Parser() {
-}
-bool Parser::productListXMLNodetoObject(XMLNode& productListXMLNode,
-		ProductTable& productTableObject) {
-	bool returnValue = false;
-	unsigned int i, n;
-	XMLNode* nodeBarcodeList, *nodeProduct, *nodeName, *nodePrice;
-	// BarcodeList level
-	if (productListXMLNode.findChild("BarcodeList", nodeBarcodeList, 0)) {
-		returnValue = true;
-		n = nodeBarcodeList->findChildSize("Product");
-		for (i = 0; i < n; i++) {
-			if (nodeBarcodeList->findChild("Product", nodeProduct, i)) {
-				if (nodeProduct->findChild("Name", nodeName, 0)
-						&& nodeProduct->findChild("Price", nodePrice, 0)) {
-					if (!productTableObject.insert(
-							new Product(nodeName->getValue(),
-									stod(nodePrice->getValue())))) {
-						// too many hash collisions. discard product.
-						cout
-								<< "ERROR! Too many collisions. Product Discarded: "
-								<< nodeName->getValue() << endl;
-					}
-				}
-			}
-		}
-	}
-	return returnValue;
-}
-bool Parser::cartListXMLNodetoObject(XMLNode& cartListXMLNode,
-		CartList& cartListObject, ProductTable& productTableObject) {
-	bool returnValue = false;
-	unsigned int i, n, cartNumber, cartLaneRange;
-	XMLNode* nodeXMLCarts;
-	vector<thread*> threadList;
-	// XMLCarts level
-	if (cartListXMLNode.findChild("XMLCarts", nodeXMLCarts, 0)) {
-		returnValue = true;
-		// create the lanes
-		CartLane cartLane[CART_PROCESSING_THREADS];
-		n = nodeXMLCarts->childrenSize();
-		cartLaneRange = n / CART_PROCESSING_THREADS;
-		// distribute carts in lanes
-		for (i = 0; i < CART_PROCESSING_THREADS; i++) {
-			cartLane[i].init(nodeXMLCarts, cartListObject, productTableObject);
-			if (i + 1 == CART_PROCESSING_THREADS) {
-				cartLane[i].range(i * cartLaneRange, n + 1);
-			} else {
-				cartLane[i].range(i * cartLaneRange, (i + 1) * cartLaneRange);
-			}
-			// cartLane[i].process();
-			threadList.push_back(new thread(&CartLane::process, &cartLane[i]));
-		}
-		// block threads
-		n = threadList.size();
-		for (i = 0; i < n; i++) {
-			threadList[i]->join();
-		}
-	}
-	return returnValue;
-}
-
-/*
  * main & interface
  * Rules For Encoding:
  * - Read through file and increment character code frequency in a hash table based on contents
@@ -937,12 +858,9 @@ int main() {
 		 * This way very large files won't lag or crash the program.
 		 */
 		characterPriorityQueue.fileStreamIn(fileStreamIn);
-
-		parseProductsXMLFuture = async(&CharacterPriorityQueue::fileStreamIn,
-				&xmlparser, ref((istream&) fileStreamInProducts),
-				ref(ProductsXML));
-		parseCartsXMLFuture = async(&CharacterPriorityQueue::fileStreamIn,
-				&xmlparser, ref((istream&) fileStreamInCarts), ref(CartsXML));
+		CharacterPriorityQueueTree characterPriorityQueueTree();
+		CharacterToBinaryTable characterToBinaryTable(
+				characterPriorityQueueTree.toCharacterToBinaryTable());
 		if (parseProductsXMLFuture.get()) {
 			cout
 					<< "Successfully parsed Product List XML File to Product List Nodes."
