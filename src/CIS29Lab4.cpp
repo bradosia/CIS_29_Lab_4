@@ -12,6 +12,11 @@
  * 	and does not perform optimizations very well, such as RVO (Return Value Optimization).
  * 	In this lab I have attempted to use smart pointers and references. I still do not return objects
  * 	by value even though any modern compiler should optimize this very well.
+ * 2. Independent Compressed Binary
+ * 	The lab instructions assume that files will be encoded then promptly decoded with the information
+ * 	in memory. This project will try to make the encoded binary files independent of the program
+ * 	instance. The program may encode a file, close, reopen and decode the file without any
+ * 	extra information.
  */
 
 #include <string>
@@ -158,13 +163,17 @@ public:
 class CharacterPriorityQueueTree {
 private:
 	CharacterPriorityQueueTreeNode characterPriorityQueueTreeNodeParent;
+	/** HashTable<unsigned int, string> */
+	shared_ptr<HashTable<unsigned int, string>> characterToBinaryTable;
 public:
 	CharacterPriorityQueueTree();
-	/*
-	 * @param priorityQueuePtr observing pointer
+	/**
+	 * @param priority queue reference
+	 * @return true on build success, false on build failure
 	 */
-	void buildTree(priorityQueueType* priorityQueuePtr);
-	unique_ptr<HashTable<unsigned int, string>> toCharacterToBinaryTable();
+	bool buildTree(priorityQueueType& priorityQueue);
+	bool buildBinaryTable();
+	shared_ptr<HashTable<unsigned int, string>> getCharacterToBinaryTable();
 };
 
 /**
@@ -174,20 +183,23 @@ public:
 class CharacterToBinaryTable {
 private:
 	/** HashTable<character code, character binary string> */
-	unique_ptr<HashTable<unsigned int, string>> characterCodeToBinaryStringTablePtr;
+	shared_ptr<HashTable<unsigned int, string>> characterCodeToBinaryStringTablePtr;
 	/** HashTable<character binary string, character code> */
-	unique_ptr<HashTable<string, unsigned int>> binaryStringToCharacterCodeTablePtr;
+	shared_ptr<HashTable<string, unsigned int>> binaryStringToCharacterCodeTablePtr;
 	CharacterPriorityQueueTreeNode characterPriorityQueueTreeNodeParent;
 public:
+	CharacterToBinaryTable() {
+
+	}
 	/**
 	 * to keep this class "slim", we will build our table elsewhere and move the pointer
 	 * ownership into this class.
 	 */
-	CharacterToBinaryTable(unique_ptr<HashTable<unsigned int, string>> tablePtr) :
-			characterCodeToBinaryStringTablePtr(move(tablePtr)) {
+	void set(shared_ptr<HashTable<unsigned int, string>> tablePtr) {
+		characterCodeToBinaryStringTablePtr = tablePtr;
 	}
-	CharacterToBinaryTable(unique_ptr<HashTable<string, unsigned int>> tablePtr) :
-			binaryStringToCharacterCodeTablePtr(move(tablePtr)) {
+	void set(shared_ptr<HashTable<string, unsigned int>> tablePtr) {
+		binaryStringToCharacterCodeTablePtr = tablePtr;
 	}
 	/**
 	 * build the binaryStringToCharacterCodeTable from the characterCodeToBinaryStringTable
@@ -211,111 +223,13 @@ public:
 	unsigned int binaryStringToCharacterCode(string characterBinaryString);
 };
 
-class Product {
+class Compressor {
 private:
-	string name;
-	double price;
+	shared_ptr<CharacterToBinaryTable> characterToBinaryTable;
 public:
-	Product(string name_, double price_);
-	~Product() {
-	}
-	string getName();
-	double getPrice();
-	string toString();
-};
-
-class ProductTable {
-private:
-	Code39CharTable code39CharTable;
-	HashTable<string, Product*> code39ItemToProductTable;
-public:
-	ProductTable();
-	~ProductTable() {
-	}
-	/*
-	 * @param key The code39 Binary String of first 5 characters of product name
-	 * @param val pointer to the product
-	 */
-	bool insert(string key, Product* val);
-	/*
-	 * Generates the key automatically
-	 * @param val pointer to the product
-	 */
-	bool insert(Product* val);
-	/*
-	 * WARNING: could throw an exception
-	 */
-	Product* at(string key);
-	string toString();
-
-};
-
-class Cart {
-private:
-	vector<Product*> productList;
-	unsigned int cartNumber;
-	double priceTotal;
-public:
-	Cart();
-	Cart(unsigned int cartNumber_);
-	~Cart() {
-	}
-	void insert(Product* productPtr);
-	void calculatePriceTotal();
-	string toString();
-};
-
-class CartList {
-private:
-	vector<Cart*> cartList;
-public:
-	CartList() {
-	}
-	~CartList() {
-	}
-	void insert(Cart* cardPtr);
-	string toString();
-};
-
-class CartLane {
-private:
-	XMLNode* nodeXMLCarts;
-	CartList* cartListObject;
-	ProductTable* productTableObject;
-	unsigned int indexStart;
-	unsigned int indexStop;
-public:
-	CartLane() {
-		nodeXMLCarts = NULL;
-		cartListObject = NULL;
-		productTableObject = NULL;
-		indexStart = indexStop = 0;
-	}
-	~CartLane() {
-	}
-	void init(XMLNode*& nodeXMLCarts_, CartList& cartListObject_,
-			ProductTable& productTableObject_);
-	void range(unsigned int indexStart_, unsigned int indexStop_);
-	bool process();
-};
-
-/**
- @class Code39Item
- Converts a Code 39 Item to the a product \n
- */
-class Code39Item {
-private:
-	Code39CharTable * code39CharTable;
-	string binaryString, codeString;
-	queue<int> intQueue;
-public:
-	Code39Item(Code39CharTable* code39CharTablePtr);
-	~Code39Item() {
-	}
-	void setBinaryString(string binaryString_);
-	void setCodeString(string codeString_);
-	bool toCodeString(string& code39CharItem);
-	bool toBinaryString(string& code39CharItem);
+	void set(shared_ptr<CharacterToBinaryTable> tablePtr);
+	bool encode(istream& streamIn, ostream& streamOut);
+	bool decode(istream& streamIn, ostream& streamOut);
 };
 
 /*
@@ -585,242 +499,6 @@ unsigned int CharacterToBinaryTable::binaryStringToCharacterCode(
 }
 
 /*
- * Product Implementation
- */
-Product::Product(string name_, double price_) {
-	name = name_;
-	price = price_;
-}
-string Product::getName() {
-	return name;
-}
-double Product::getPrice() {
-	return price;
-}
-string Product::toString() {
-	// I'm using string stream so I don't need to reinvent console spacing.
-	stringstream str;
-	str << left << setw(20) << name << " " << fixed << setprecision(2) << price;
-	return str.str();
-}
-
-/*
- * ProductTable Implementation
- */
-ProductTable::ProductTable() {
-	code39ItemToProductTable.resize(1700);
-}
-bool ProductTable::insert(string key, Product* val) {
-	return code39ItemToProductTable.insert(key, val);
-}
-bool ProductTable::insert(Product* val) {
-	bool returnValue = false;
-	Code39Item code39Item(&code39CharTable);
-	code39Item.setCodeString(val->getName().substr(0, 5));
-	string code39BinaryString;
-	if (code39Item.toBinaryString(code39BinaryString)) {
-		/*cout << val->getName().substr(0, 5) << " = " << code39BinaryString
-		 << endl;*/
-		returnValue = code39ItemToProductTable.insert(code39BinaryString, val);
-	}
-	return returnValue;
-}
-Product* ProductTable::at(string key) {
-	return code39ItemToProductTable.at(key);
-}
-string ProductTable::toString() {
-	string str = "";
-	str.append(" Product Table \n---------------\n");
-	stringstream headString, endString;
-	headString << left << setw(20) << "Product Name" << " Price" << endl;
-	str.append(headString.str());
-	unsigned int i, n;
-	n = code39ItemToProductTable.size();
-	for (i = 0; i < n; i++) {
-		try {
-			str.append(code39ItemToProductTable.atIndex(i)->toString()).append(
-					"\n");
-		} catch (...) {
-
-		}
-	}
-	return str;
-}
-/*
- * Cart Implementation
- */
-Cart::Cart() {
-	cartNumber = 0;
-	priceTotal = 0;
-}
-Cart::Cart(unsigned int cartNumber_) {
-	cartNumber = cartNumber_;
-	priceTotal = 0;
-}
-void Cart::insert(Product* productPtr) {
-	productList.push_back(productPtr);
-}
-void Cart::calculatePriceTotal() {
-	unsigned int i, n;
-	n = (unsigned int) productList.size();
-	priceTotal = 0;
-	for (i = 0; i < n; i++) {
-		priceTotal += productList.at(i)->getPrice();
-	}
-}
-string Cart::toString() {
-	string str = "";
-	stringstream headString, endString;
-	calculatePriceTotal();
-	str.append("Cart #").append(to_string(cartNumber)).append("\n");
-	headString << left << setw(20) << "Product Name" << " Price" << endl;
-	str.append(headString.str());
-	unsigned int i, n;
-	n = (unsigned int) productList.size();
-	try {
-		for (i = 0; i < n; i++) {
-			str.append(productList[i]->toString()).append("\n");
-		}
-	} catch (...) {
-		//nothing
-	}
-	endString << left << setfill('-') << setw(30) << "" << endl << setfill(' ')
-			<< setw(21) << "Total Price" << fixed << setprecision(2)
-			<< priceTotal << endl << setfill('-') << setw(30) << "";
-	str.append(endString.str());
-	return str;
-}
-/*
- * CartList Implementation
- */
-void CartList::insert(Cart* cartPtr) {
-	cartList.push_back(cartPtr);
-}
-string CartList::toString() {
-	string str = "";
-	str.append(" Cart List \n-----------\n");
-	unsigned int i, n;
-	n = cartList.size();
-	try {
-		for (i = 0; i < n; i++) {
-			str.append(cartList[i]->toString()).append("\n\n");
-		}
-	} catch (...) {
-		//nothing
-	}
-	return str;
-}
-/*
- * CartLane Implementation
- */
-void CartLane::init(XMLNode*& nodeXMLCarts_, CartList& cartListObject_,
-		ProductTable& productTableObject_) {
-	nodeXMLCarts = nodeXMLCarts_;
-	cartListObject = &cartListObject_;
-	productTableObject = &productTableObject_;
-}
-void CartLane::range(unsigned int indexStart_, unsigned int indexStop_) {
-	indexStart = indexStart_;
-	indexStop = indexStop_;
-}
-bool CartLane::process() {
-	unsigned int i, n, j, n1, cartNumber;
-	XMLNode *nodeCart, *nodeItem;
-	Cart* cartPtr = NULL;
-	// Assume all children are carts
-	n = indexStop;
-	cout << indexStart << " to " << n << endl;
-	for (i = indexStart; i < n; i++) {
-		nodeCart = nodeXMLCarts->getChild(i);
-		if (nodeCart != nullptr) {
-			/* extract the cart number
-			 * stoi could throw exceptions
-			 */
-			try {
-				cartNumber = (unsigned int) stoi(
-						nodeCart->getName().substr(4,
-								nodeCart->getName().length()));
-			} catch (...) {
-				cartNumber = 0;
-			}
-			cartPtr = new Cart(cartNumber);
-			// Assume all children are items
-			n1 = nodeCart->childrenSize();
-			for (j = 0; j < n1; j++) {
-				nodeItem = nodeCart->getChild(j);
-				if (nodeItem != nullptr) {
-					try {
-						cartPtr->insert(
-								productTableObject->at(nodeItem->getValue()));
-					} catch (...) {
-						//nothing
-					}
-				}
-			}
-		}
-		mutexGlobal.lock();
-		cartListObject->insert(cartPtr);
-		mutexGlobal.unlock();
-	}
-	return true;
-}
-/*
- * Code39Item Implementation
- */
-Code39Item::Code39Item(Code39CharTable* code39CharTablePtr) {
-	code39CharTable = code39CharTablePtr;
-}
-
-void Code39Item::setBinaryString(string binaryString_) {
-	unsigned int i, n;
-	n = binaryString_.size();
-	// must have at least one code39 char
-	if (n / 9 > 0 && n % 9 == 0) {
-		for (i = 0; i < n; i++) {
-			bitset < 9 > bits(binaryString_.substr(i * 9, 9));
-			intQueue.push((unsigned int) bits.to_ulong());
-		}
-	}
-}
-void Code39Item::setCodeString(string codeString_) {
-	unsigned int i, n, temp;
-	n = codeString_.size();
-	for (i = 0; i < n; i++) {
-		code39CharTable->charToInt(codeString_[i], temp);
-		intQueue.push(temp);
-	}
-}
-
-bool Code39Item::toCodeString(string& code39CharItem) {
-	bool returnValue = false;
-	if (!intQueue.empty()) {
-		char temp[2];
-		temp[1] = 0;
-		code39CharItem = "";
-		while (!intQueue.empty()) {
-			code39CharTable->intToChar(intQueue.front(), temp[0]);
-			code39CharItem.append(temp);
-			intQueue.pop();
-		}
-		returnValue = true;
-	}
-	return returnValue;
-}
-bool Code39Item::toBinaryString(string& code39CharItem) {
-	bool returnValue = false;
-	if (!intQueue.empty()) {
-		code39CharItem = "";
-		while (!intQueue.empty()) {
-			bitset < 9 > bits(intQueue.front());
-			code39CharItem.append(bits.to_string());
-			intQueue.pop();
-		}
-		returnValue = true;
-	}
-	return returnValue;
-}
-
-/*
  * main & interface
  * Rules For Encoding:
  * - Read through file and increment character code frequency in a hash table based on contents
@@ -834,31 +512,70 @@ bool Code39Item::toBinaryString(string& code39CharItem) {
  */
 int main() {
 	FileHandler fh;
-	Parser parser;
 	CharacterPriorityQueue characterPriorityQueue;
+	CharacterPriorityQueueTree characterPriorityQueueTree;
+	CharacterToBinaryTable characterToBinaryTable;
+	Compressor compressor;
 	string fileNameOriginal, fileNameEncrypt, fileNameDecrypt;
 	ifstream fileStreamIn;
 	ofstream fileStreamOut;
-	future<bool> parseProductsXMLFuture, parseCartsXMLFuture;
+	/**
+	 * anti deep if nesting flag
+	 * I could also use an exception model to stop deep nesting, but
+	 * exceptions will hurt performance more. Instead we will use a flag to
+	 * reset a deep nest back to the highest level context in the function
+	 */
 	bool flag = false;
 	/* input/output files are here */
 	fileNameOriginal = "Speech.txt";
 	fileNameEncrypt = "encrypt.data";
 	fileNameDecrypt = "decrypt.txt";
-	// parse XML file streams into an XML document node
-	XMLNode ProductsXML, CartsXML;
-	ProductTable productTable;
-	CartList cartList;
+	cout << "Opening the input file." << endl;
 	if (!fh.readStream(fileNameOriginal, fileStreamIn)) {
-		cout << "Could not read either of the input files." << endl;
-	} else {
-		cout << "Parsing XML files..." << endl;
-		/* we pass file streams instead of a string to this method
-		 * because we want to stream the data and decode it as we read.
-		 * This way very large files won't lag or crash the program.
+		/*
+		 * We check a false value first so we can quickly reference messages
+		 * in the code. Otherwise we would have to scroll a bit down to find if and corresponding
+		 * false message. This is just convenience.
 		 */
-		characterPriorityQueue.fileStreamIn(fileStreamIn);
-		CharacterPriorityQueueTree characterPriorityQueueTree();
+		cout << "[Error] Could not open the input file." << endl;
+	} else {
+		cout << "Parsing input input stream as a character frequency table."
+				<< endl;
+		/* we pass a file stream instead of a reading the whole file
+		 * into memory to reduce memory usage.
+		 */
+		if (!characterPriorityQueue.fileStreamIn(fileStreamIn)) {
+			cout
+					<< "[Error] Could not parse the input stream as a character frequency table."
+					<< endl;
+		} else {
+			cout << "Building the priority queue." << endl;
+			if (!characterPriorityQueue.buildPriorityQueue()) {
+				cout << "[Error] Could not build the priority queue." << endl;
+			} else {
+				flag = true;
+			}
+		}
+	}
+	// deep if nesting reset
+	if (flag) {
+		cout << "Building the priority queue tree." << endl;
+		if (!characterPriorityQueueTree.buildTree(
+				characterPriorityQueue.getPriorityQueue())) {
+			cout << "[Error] Could not build the priority queue tree." << endl;
+		} else {
+			cout << "Building the binary string table." << endl;
+			if (!characterPriorityQueueTree.buildBinaryTable()) {
+				cout << "[Error] Could not build the binary string table."
+						<< endl;
+			} else {
+				characterToBinaryTable.set(
+						characterPriorityQueueTree.getCharacterToBinaryTable());
+				// only need for decoding
+				// characterToBinaryTable.buildBinaryStringToCharacterCodeTable();
+			}
+		}
+
 		CharacterToBinaryTable characterToBinaryTable(
 				characterPriorityQueueTree.toCharacterToBinaryTable());
 		if (parseProductsXMLFuture.get()) {
