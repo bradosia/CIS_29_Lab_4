@@ -4,80 +4,42 @@
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>738</x>
-      <y>0</y>
-      <w>702</w>
-      <h>108</h>
-    </coordinates>
-    <panel_attributes>Parser
---
-
---
-Parser()
-~Parser()
-bool productListXMLNodetoObject(XMLNode&amp; productListXMLNode, ProductTable&amp; productTableObject)
-bool cartListXMLNodetoObject(XMLNode&amp; cartListXMLNode, CartList&amp; cartListObject, ProductTable&amp; productTableObject)</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates>
-      <x>621</x>
-      <y>135</y>
-      <w>351</w>
+      <x>792</x>
+      <y>126</y>
+      <w>441</w>
       <h>153</h>
     </coordinates>
-    <panel_attributes>ProductTable 
+    <panel_attributes>CharacterPriorityQueueTree
+bg=yellow
 --
-Code39CharTable code39CharTable
-HashTable&lt;string, Product*&gt; code39ItemToProductTable
+CharacterPriorityQueueTreeNode characterPriorityQueueTreeNodeParent
+shared_ptr&lt;HashTable&lt;unsigned int, string&gt;&gt; characterToBinaryTable
 --
-ProductTable()
-~ProductTable()
-bool insert(string key, Product* val)
-bool insert(Product* val)
-Product* at(string key)
-string toString()</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates>
-      <x>1332</x>
-      <y>558</y>
-      <w>324</w>
-      <h>144</h>
-    </coordinates>
-    <panel_attributes>Code39CharTable
---
-vector&lt;unsigned int&gt; charIntToCode39IntTable
-vector&lt;char&gt; Code39IntToCharTable
---
-Code39CharTable()
-~Code39CharTable()
-void buildCode39IntToCharTable()
-bool intToChar(unsigned int intIn, char&amp; charOut)
-bool charToInt(char charIn, unsigned int&amp; intOut)</panel_attributes>
+CharacterPriorityQueueTree()
+~CharacterPriorityQueueTree()
+bool buildTree(priorityQueueType&amp; priorityQueue)
+bool buildBinaryTable()
+shared_ptr&lt;HashTable&lt;unsigned int, string&gt;&gt; getCharacterToBinaryTable()</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>891</x>
-      <y>279</y>
+      <x>1017</x>
+      <y>270</y>
       <w>27</w>
-      <h>225</h>
+      <h>54</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>10.0;230.0;10.0;10.0</additional_attributes>
+    <additional_attributes>10.0;40.0;10.0;10.0</additional_attributes>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>171</x>
-      <y>135</y>
+      <x>0</x>
+      <y>126</y>
       <w>351</w>
-      <h>126</h>
+      <h>153</h>
     </coordinates>
     <panel_attributes>FileHandler
 --
@@ -85,32 +47,230 @@ bool charToInt(char charIn, unsigned int&amp; intOut)</panel_attributes>
 --
 FileHandler()
 ~FileHandler()
-bool readLines(string fileName, ifstream&amp; fileStream)
-bool writeLines(string fileName, ofstream&amp; fileStream)
+bool readStream(string fileName, ifstream&amp; fileStream)
+bool writeStream(string fileName, ofstream&amp; fileStream)
+bool writeString(string fileName, string stringValue)
 bool close(ifstream&amp; fileStream)</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>207</x>
-      <y>18</y>
+      <x>0</x>
+      <y>0</y>
       <w>324</w>
       <h>72</h>
     </coordinates>
     <panel_attributes>UML Diagram
-Lab 3 - Threading
-Code39 Symbology in XML Container with threading
+Lab 4 - Encryption and Compression
+Use a priority_queue to simulate a binary_tree
 By: Branden Lee</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>567</x>
-      <y>648</y>
-      <w>351</w>
-      <h>144</h>
+      <x>162</x>
+      <y>324</y>
+      <w>288</w>
+      <h>72</h>
+    </coordinates>
+    <panel_attributes>&lt;class T&gt; CharacterPriorityQueueCompare
+bg=orange
+--
+
+--
+bool operator()(const T &amp;lhs, const T &amp;rhs) const</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>63</x>
+      <y>441</y>
+      <w>531</w>
+      <h>108</h>
+    </coordinates>
+    <panel_attributes>CharacterFrequencyNode
+bg=orange
+--
+
+--
+unsigned int first
+unsigned int second
+CharacterFrequencyNode(unsigned int first_, unsigned int second_)
+bool operator&lt;(const CharacterFrequencyNode &amp;lhs, const CharacterFrequencyNode &amp;rhs)</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>954</x>
+      <y>306</y>
+      <w>234</w>
+      <h>153</h>
+    </coordinates>
+    <panel_attributes>CharacterPriorityQueueTreeNode
+bg=yellow
+--
+CharacterPriorityQueueTreeNode *left
+CharacterPriorityQueueTreeNode *right
+unsigned int characterCode
+bool leafFlag
+--
+CharacterPriorityQueueTreeNode()
+~CharacterPriorityQueueTreeNode()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1098</x>
+      <y>477</y>
+      <w>486</w>
+      <h>198</h>
+    </coordinates>
+    <panel_attributes>CharacterToBinaryTable
+bg=green
+--
+shared_ptr&lt;HashTable&lt;unsigned int, string&gt;&gt; characterCodeToBinaryStringTablePtr
+shared_ptr&lt;HashTable&lt;string, unsigned int&gt;&gt; binaryStringToCharacterCodeTablePtr
+CharacterPriorityQueueTreeNode characterPriorityQueueTreeNodeParent
+--
+CharacterToBinaryTable()
+~CharacterToBinaryTable()
+void set(shared_ptr&lt;HashTable&lt;unsigned int, string&gt;&gt; tablePtr)
+void set(shared_ptr&lt;HashTable&lt;string, unsigned int&gt;&gt; tablePtr)
+void buildBinaryStringToCharacterCodeTable()
+void buildCharacterCodeToBinaryStringTable()
+string characterCodeToBinaryString(unsigned int characterCode)
+unsigned int binaryStringToCharacterCode(string characterBinaryString)</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>666</x>
+      <y>270</y>
+      <w>27</w>
+      <h>90</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>10.0;80.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1260</x>
+      <y>126</y>
+      <w>369</w>
+      <h>99</h>
+    </coordinates>
+    <panel_attributes>Compressor
+bg=green
+--
+shared_ptr&lt;CharacterToBinaryTable&gt; characterToBinaryTable
+--
+void set(shared_ptr&lt;CharacterToBinaryTable&gt; tablePtr)
+bool encode(istream&amp; streamIn, ostream&amp; streamOut)
+bool decode(istream&amp; streamIn, ostream&amp; streamOut)</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1350</x>
+      <y>216</y>
+      <w>27</w>
+      <h>279</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>10.0;290.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>0</x>
+      <y>81</y>
+      <w>1008</w>
+      <h>27</h>
+    </coordinates>
+    <panel_attributes>using priorityQueueType = std::priority_queue&lt;CharacterFrequencyNode, vector&lt;CharacterFrequencyNode&gt;, CharacterPriorityQueueCompare&lt;CharacterFrequencyNode&gt; &gt;</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>378</x>
+      <y>126</y>
+      <w>387</w>
+      <h>153</h>
+    </coordinates>
+    <panel_attributes>CharacterPriorityQueue
+bg=orange
+--
+HashTable&lt;unsigned int, unsigned int*&gt; characterFrequencyTable
+unique_ptr&lt;priorityQueueType&gt; priorityQueue
+--
+CharacterPriorityQueue()
+~CharacterPriorityQueue()
+bool fileStreamIn(istream&amp; streamIn)
+bool bufferHandle(string&amp; streamBuffer)
+bool buildPriorityQueue()
+reference_wrapper&lt;priorityQueueType&gt; getPriorityQueue()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>396</x>
+      <y>270</y>
+      <w>27</w>
+      <h>72</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>10.0;60.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>513</x>
+      <y>270</y>
+      <w>27</w>
+      <h>189</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>10.0;190.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>855</x>
+      <y>270</y>
+      <w>27</w>
+      <h>225</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>10.0;230.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>981</x>
+      <y>504</y>
+      <w>135</w>
+      <h>27</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>10.0;10.0;130.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>612</x>
+      <y>558</y>
+      <w>279</w>
+      <h>207</h>
     </coordinates>
     <panel_attributes>HashTable&lt;K keyType, T valueType&gt;
 --
@@ -125,238 +285,60 @@ T at(K key)
 T atIndex(unsigned int index)
 unsigned int hash(K key)
 unsigned int hash(unsigned int key)
-unsigned int size()</panel_attributes>
+unsigned int size()
+bool resize(unsigned int key);</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
-    <id>UMLClass</id>
+    <id>Relation</id>
     <coordinates>
-      <x>99</x>
+      <x>810</x>
       <y>513</y>
-      <w>432</w>
-      <h>279</h>
-    </coordinates>
-    <panel_attributes>XMLNode
---
-string name
-string value
-vector&lt;XMLNode*&gt; childNodes
-XMLNode* parentNode
---
-XMLNode()
-XMLNode(string name_, XMLNode* parentNode_)
-~XMLNode()
-void valueAppend(string str)
-string getName()
-string getValue()
-XMLNode* getParent()
-XMLNode* addChild(string str)
-XMLNode* getChild(unsigned int index)
-bool findChild(string name_, XMLNode*&amp; returnNode, unsigned int index)
-unsigned int childrenSize()
-unsigned int findChildSize(string name_)</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates>
-      <x>0</x>
-      <y>315</y>
-      <w>810</w>
-      <h>153</h>
-    </coordinates>
-    <panel_attributes>XMLParser
---
-regex tagOpenRegex
-regex tagEndRegex
---
-XMLParser()
-~XMLParser()
-bool documentStream(istream&amp; streamIn, XMLNode&amp; xmlDoc)
-bool bufferSearch(string&amp; streamBuffer, XMLNode&amp; xmlDoc, XMLNode*&amp; xmlNodeCurrent, stack&lt;string&gt;&amp; documentStack, unsigned int mode)
-bool nodePop(string&amp; tagString, XMLNode&amp; xmlDoc, XMLNode*&amp; xmlNodeCurrent, stack&lt;string&gt;&amp; documentStack)
-bool nodePush(string&amp; tagString, XMLNode&amp; xmlDoc, XMLNode*&amp; xmlNodeCurrent, stack&lt;string&gt;&amp; documentStack)</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates>
-      <x>864</x>
-      <y>486</y>
-      <w>216</w>
-      <h>153</h>
-    </coordinates>
-    <panel_attributes>Product
---
-string name
-double price
---
-ProductTable()
-~ProductTable()
-bool insert(string key, Product* val)
-bool insert(Product* val)
-Product* at(string key)
-string toString()</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates>
-      <x>1332</x>
-      <y>351</y>
-      <w>324</w>
-      <h>171</h>
-    </coordinates>
-    <panel_attributes>Code39Item
---
-Code39CharTable* code39CharTable
-string binaryString, codeString
-queue&lt;int&gt; intQueue
---
-Code39Item(Code39CharTable* code39CharTablePtr)
-~Code39Item()
-void setBinaryString(string binaryString_)
-void setCodeString(string codeString_)
-bool toCodeString(string&amp; code39CharItem)
-bool toBinaryString(string&amp; code39CharItem)</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates>
-      <x>1116</x>
-      <y>351</y>
-      <w>171</w>
-      <h>108</h>
-    </coordinates>
-    <panel_attributes>CartList
---
-vector&lt;Cart*&gt; cartList
---
-CartList()
-~CartList()
-void insert(Cart* cardPtr)
-string toString()</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>UMLClass</id>
-    <coordinates>
-      <x>1107</x>
-      <y>486</y>
-      <w>198</w>
-      <h>144</h>
-    </coordinates>
-    <panel_attributes>Cart
---
-vector&lt;Product*&gt; productList
-unsigned int cartNumber
---
-Cart()
-Cart(unsigned int cartNumber_)
-~Cart()
-void insert(Product* productPtr)
-string toString()</panel_attributes>
-    <additional_attributes/>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates>
-      <x>1071</x>
-      <y>576</y>
-      <w>54</w>
-      <h>27</h>
-    </coordinates>
-    <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>10.0;10.0;40.0;10.0</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates>
-      <x>1197</x>
-      <y>450</y>
-      <w>27</w>
-      <h>54</h>
-    </coordinates>
-    <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>10.0;40.0;10.0;10.0</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates>
-      <x>315</x>
-      <y>459</y>
-      <w>27</w>
-      <h>72</h>
-    </coordinates>
-    <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>10.0;60.0;10.0;10.0</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates>
-      <x>864</x>
-      <y>99</y>
-      <w>27</w>
-      <h>54</h>
-    </coordinates>
-    <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>10.0;40.0;10.0;10.0</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates>
-      <x>1098</x>
-      <y>99</y>
-      <w>27</w>
-      <h>54</h>
-    </coordinates>
-    <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>10.0;40.0;10.0;10.0</additional_attributes>
-  </element>
-  <element>
-    <id>Relation</id>
-    <coordinates>
-      <x>1494</x>
-      <y>513</y>
-      <w>27</w>
+      <w>99</w>
       <h>63</h>
     </coordinates>
-    <panel_attributes>lt=&lt;-</panel_attributes>
+    <panel_attributes>lt=&lt;.
+&lt;&lt;instanceOf&gt;&gt;</panel_attributes>
     <additional_attributes>10.0;50.0;10.0;10.0</additional_attributes>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1008</x>
-      <y>135</y>
-      <w>585</w>
-      <h>189</h>
+      <x>585</x>
+      <y>342</y>
+      <w>189</w>
+      <h>45</h>
     </coordinates>
-    <panel_attributes>CartLane
+    <panel_attributes>_object: HashTable_
+bg=orange
 --
-XMLNode* nodeXMLCarts
-CartList* cartListObject
-ProductTable* productTableObject
-unsigned int indexStart
-unsigned int indexStop
+characterFrequencyTable</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>765</x>
+      <y>477</y>
+      <w>225</w>
+      <h>45</h>
+    </coordinates>
+    <panel_attributes>_object: HashTable_
+bg=yellow
 --
-CartLane()
-~CartLane()
-void init(XMLNode*&amp; nodeXMLCarts_, CartList&amp; cartListObject_, ProductTable&amp; productTableObject_)
-void range(unsigned int indexStart_, unsigned int indexStop_)
-bool process()</panel_attributes>
+characterCodeToBinaryStringTable</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>1197</x>
-      <y>315</y>
-      <w>27</w>
-      <h>54</h>
+      <x>648</x>
+      <y>378</y>
+      <w>99</w>
+      <h>198</h>
     </coordinates>
-    <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>10.0;40.0;10.0;10.0</additional_attributes>
+    <panel_attributes>lt=&lt;.
+&lt;&lt;instanceOf&gt;&gt;</panel_attributes>
+    <additional_attributes>10.0;200.0;10.0;10.0</additional_attributes>
   </element>
 </diagram>
