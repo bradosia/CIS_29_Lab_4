@@ -514,8 +514,9 @@ int main() {
 	FileHandler fh;
 	CharacterPriorityQueue characterPriorityQueue;
 	CharacterPriorityQueueTree characterPriorityQueueTree;
-	CharacterToBinaryTable characterToBinaryTable;
-	Compressor compressor;
+	shared_ptr<CharacterToBinaryTable> characterToBinaryTablePtr = make_shared<
+			CharacterToBinaryTable>();
+	shared_ptr<Compressor> compressorPtr = make_shared<Compressor>();
 	string fileNameOriginal, fileNameEncrypt, fileNameDecrypt;
 	ifstream fileStreamIn;
 	ofstream fileStreamOut;
@@ -531,13 +532,16 @@ int main() {
 	fileNameEncrypt = "encrypt.data";
 	fileNameDecrypt = "decrypt.txt";
 	cout << "Opening the input file." << endl;
-	if (!fh.readStream(fileNameOriginal, fileStreamIn)) {
+	if (!fh.readStream(fileNameOriginal, fileStreamIn)
+			|| !fh.writeStream(fileNameEncrypt, fileStreamOut)) {
 		/*
 		 * We check a false value first so we can quickly reference messages
 		 * in the code. Otherwise we would have to scroll a bit down to find if and corresponding
 		 * false message. This is just convenience.
 		 */
-		cout << "[Error] Could not open the input file." << endl;
+		cout << "[Error] Could not open either the input file \""
+				<< fileNameOriginal << "\" or the input file \""
+				<< fileNameEncrypt << "\"." << endl;
 	} else {
 		cout << "Parsing input input stream as a character frequency table."
 				<< endl;
@@ -559,6 +563,7 @@ int main() {
 	}
 	// deep if nesting reset
 	if (flag) {
+		flag = false;
 		cout << "Building the priority queue tree." << endl;
 		if (!characterPriorityQueueTree.buildTree(
 				characterPriorityQueue.getPriorityQueue())) {
@@ -569,31 +574,27 @@ int main() {
 				cout << "[Error] Could not build the binary string table."
 						<< endl;
 			} else {
-				characterToBinaryTable.set(
+				characterToBinaryTablePtr->set(
 						characterPriorityQueueTree.getCharacterToBinaryTable());
 				// only need for decoding
 				// characterToBinaryTable.buildBinaryStringToCharacterCodeTable();
+				compressorPtr->set(characterToBinaryTablePtr);
+				flag = true;
 			}
 		}
-
-		CharacterToBinaryTable characterToBinaryTable(
-				characterPriorityQueueTree.toCharacterToBinaryTable());
-		if (parseProductsXMLFuture.get()) {
-			cout
-					<< "Successfully parsed Product List XML File to Product List Nodes."
-					<< endl;
-			// create the product table from the product list XML
-			if (parser.productListXMLNodetoObject(ProductsXML, productTable)) {
-				//fh.writeString("productList.txt", productTable.toString());
-				cout
-						<< "Successfully parsed Product List XML Nodes into hash table."
-						<< endl;
-				flag = true;
-			} else {
-				cout
-						<< "Failed to parse Product List XML Nodes into hash table."
-						<< endl;
-			}
+	}
+	if (flag) {
+		flag = false;
+		cout << "Encoding the input file." << endl;
+		if (!compressorPtr->encode(fileStreamIn,)) {
+			cout << "[Error] Could not build the binary string table." << endl;
+		} else {
+			characterToBinaryTablePtr->set(
+					characterPriorityQueueTree.getCharacterToBinaryTable());
+			// only need for decoding
+			// characterToBinaryTable.buildBinaryStringToCharacterCodeTable();
+			compressorPtr->set(characterToBinaryTablePtr);
+			flag = true;
 		}
 	}
 	// process each cart from the XML file referencing each product from the product table
