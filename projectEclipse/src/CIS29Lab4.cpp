@@ -29,6 +29,7 @@
 #include <queue>		// std::priority_queue
 #include <cstring>
 #include <memory>		// std::unique_ptr
+#include <functional>	// std::hash
 using namespace std;
 
 /** Buffer size for reading in files for parsing */
@@ -52,10 +53,11 @@ public:
 	 @param string File name to open
 	 @return True on file open successful and false in not
 	 */
-	bool readStream(string fileName, ifstream& fileStream);
-	bool writeStream(string fileName, ofstream& fileStream);
+	bool readStream(string fileName, ifstream& fileStream) throw (unsigned int);
+	bool writeStream(string fileName, ofstream& fileStream) throw (unsigned int);
 	bool writeString(string fileName, string stringValue);
-	bool close(ifstream& fileStream);
+	bool close(ifstream& fileStream) throw (unsigned int);
+	bool close(ofstream& fileStream) throw (unsigned int);
 };
 
 /**
@@ -65,20 +67,24 @@ public:
 template<class K, class T>
 class HashTable {
 private:
-	vector<pair<K, T>*> table;
+	vector<unique_ptr<pair<K, T>>> table;
 	unsigned int insertAttempts;
+	hash<K> hashT;
+	hash<size_t> hashSize;
 public:
-	HashTable();
-	HashTable(unsigned int size);
+	HashTable() :
+			table(100), insertAttempts(10) {
+	}
+	HashTable(size_t size) :
+			table(size), insertAttempts(10) {
+	}
 	~HashTable() {
 	}
 	bool insert(K key, T val);
 	T at(K key);
-	T atIndex(unsigned int index);
-	unsigned int hash(K key);
-	unsigned int hash(unsigned int key);
-	unsigned int size();
-	bool resize(unsigned int key);
+	T atIndex(size_t index);
+	size_t size();
+	bool resize(size_t key);
 };
 
 /**
@@ -89,11 +95,12 @@ public:
  */
 class CharacterFrequencyNode {
 public:
-	unsigned int first, second;
-	CharacterFrequencyNode(unsigned int first_, unsigned int second_);
-	bool operator<(const CharacterFrequencyNode &lhs,
-			const CharacterFrequencyNode &rhs) {
-		return lhs.first < rhs.first;
+	unsigned int frequency, characterCode;
+	CharacterFrequencyNode(unsigned int frequency_,
+			unsigned int characterCode_);
+	// "this" is already the left hand side
+	bool operator<(const CharacterFrequencyNode &rhs) {
+		return frequency < rhs.frequency;
 	}
 };
 
@@ -104,7 +111,7 @@ public:
 template<class T>
 class CharacterPriorityQueueCompare {
 	bool operator()(const T &lhs, const T &rhs) const {
-		return lhs < rhs;
+		return *lhs < *rhs;
 	}
 };
 
@@ -113,7 +120,7 @@ class CharacterPriorityQueueCompare {
  * using is used rather than typedef because of this forum:
  * https://stackoverflow.com/questions/10747810/what-is-the-difference-between-typedef-and-using-in-c11
  */
-using priorityQueueType = std::priority_queue<CharacterFrequencyNode, vector<CharacterFrequencyNode>, CharacterPriorityQueueCompare<CharacterFrequencyNode>>;
+using priorityQueueType = std::priority_queue<shared_ptr<CharacterFrequencyNode>, vector<shared_ptr<CharacterFrequencyNode>>, CharacterPriorityQueueCompare<shared_ptr<CharacterFrequencyNode>>>;
 
 /**
  * @class CharacterPriorityQueue
@@ -148,12 +155,46 @@ public:
 };
 
 class CharacterPriorityQueueTreeNode {
-private:
-	CharacterPriorityQueueTreeNode *left, *right;
-	unsigned int characterCode;
-	bool leafFlag;
 public:
-	CharacterPriorityQueueTreeNode();
+	CharacterPriorityQueueTreeNode() {
+
+	}
+	virtual ~CharacterPriorityQueueTreeNode() {
+
+	}
+	virtual bool isLeaf();
+	virtual bool isBranch();
+};
+
+class CharacterPriorityQueueTreeLeaf: CharacterPriorityQueueTreeNode {
+private:
+	shared_ptr<CharacterFrequencyNode> characterFrequencyNode;
+public:
+	CharacterPriorityQueueTreeLeaf() {
+
+	}
+	~CharacterPriorityQueueTreeLeaf() {
+
+	}
+	bool isLeaf();
+	bool isBranch();
+	shared_ptr<CharacterFrequencyNode> getCharacterNode();
+};
+
+class CharacterPriorityQueueTreeBranch: CharacterPriorityQueueTreeNode {
+private:
+	unique_ptr<CharacterPriorityQueueTreeNode> left, right;
+public:
+	CharacterPriorityQueueTreeBranch() {
+
+	}
+	~CharacterPriorityQueueTreeBranch() {
+
+	}
+	bool isLeaf();
+	bool isBranch();
+	unique_ptr<CharacterPriorityQueueTreeNode> getLeft();
+	unique_ptr<CharacterPriorityQueueTreeNode> getRight();
 };
 
 /**
@@ -235,24 +276,23 @@ public:
 /*
  * FileHandler Implementation
  */
-bool FileHandler::close(ifstream& fileStream) {
-	fileStream.close();
-	return true;
-}
-
-bool FileHandler::readStream(string fileName, ifstream& fileStream) {
+bool FileHandler::readStream(string fileName, ifstream& fileStream)
+		throw (unsigned int) {
 	fileStream.open(fileName, ios::binary);
 	if (fileStream.is_open()) {
 		return true;
 	}
+	throw 0;
 	return false;
 }
 
-bool FileHandler::writeStream(string fileName, ofstream& fileStream) {
+bool FileHandler::writeStream(string fileName, ofstream& fileStream)
+		throw (unsigned int) {
 	fileStream.open(fileName);
 	if (fileStream.is_open()) {
 		return true;
 	}
+	throw 1;
 	return false;
 }
 
@@ -267,28 +307,42 @@ bool FileHandler::writeString(string fileName, string stringValue) {
 	return false;
 }
 
+bool FileHandler::close(ifstream& fileStream) throw (unsigned int) {
+	try {
+		fileStream.close();
+	} catch (...) {
+		throw 0;
+		return false;
+	}
+	return true;
+}
+
+bool FileHandler::close(ofstream& fileStream) throw (unsigned int) {
+	try {
+		fileStream.close();
+	} catch (...) {
+		throw 0;
+		return false;
+	}
+	return true;
+}
+
 /*
  * HashTable Implementation
  */
 template<class K, class T>
-HashTable<K, T>::HashTable() {
-	table.resize(100);
-	insertAttempts = 10;
-}
-
-template<class K, class T>
 bool HashTable<K, T>::insert(K key, T val) {
 	unsigned int attempts = insertAttempts;
 	K keyOriginal = key;
-	unsigned int keyInt = hash(key);
+	size_t keyInt = hashT(key);
 	bool flag = false;
 	for (; attempts > 0; attempts--) {
 		if (table[keyInt] == nullptr) {
-			table[keyInt] = new pair<K, T>(keyOriginal, val);
+			table[keyInt] = make_unique<pair<K, T>>(keyOriginal, val);
 			flag = true;
 			break;
 		}
-		keyInt = hash(keyInt);
+		keyInt = hashSize(keyInt);
 	}
 	return flag;
 }
@@ -296,14 +350,14 @@ template<class K, class T>
 T HashTable<K, T>::at(K key) {
 	unsigned int attempts = insertAttempts;
 	K keyOriginal = key;
-	unsigned int keyInt = hash(key);
+	size_t keyInt = hashT(key);
 	T ret { };
 	for (; attempts > 0; attempts--) {
 		if (table[keyInt] != nullptr && table[keyInt]->first == keyOriginal) {
 			ret = table[keyInt]->second;
 			break;
 		}
-		keyInt = hash(keyInt);
+		keyInt = hashSize(keyInt);
 	}
 	if (attempts == 0) {
 		throw out_of_range("");
@@ -311,7 +365,7 @@ T HashTable<K, T>::at(K key) {
 	return ret;
 }
 template<class K, class T>
-T HashTable<K, T>::atIndex(unsigned int index) {
+T HashTable<K, T>::atIndex(size_t index) {
 	pair<K, T>* temp = table[index];
 	if (temp != nullptr) {
 		return temp->second;
@@ -319,30 +373,14 @@ T HashTable<K, T>::atIndex(unsigned int index) {
 		throw invalid_argument("");
 	}
 }
+
 template<class K, class T>
-unsigned int HashTable<K, T>::hash(K key) {
-	unsigned int hash = 1315423911;
-	unsigned int i = 0;
-	while (key[i++]) {
-		hash ^= ((hash << 5) + key[i] + (hash >> 2));
-	}
-	return (hash & 0x7FFFFFFF) % table.size();
-}
-template<class K, class T>
-unsigned int HashTable<K, T>::hash(unsigned int key) {
-	// stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key
-	key = ((key >> 16) ^ key) * 0x45d9f3b;
-	key = ((key >> 16) ^ key) * 0x45d9f3b;
-	key = (key >> 16) ^ key;
-	return key % table.size();
-}
-template<class K, class T>
-unsigned int HashTable<K, T>::size() {
+size_t HashTable<K, T>::size() {
 	return table.size();
 }
 
 template<class K, class T>
-bool HashTable<K, T>::resize(unsigned int key) {
+bool HashTable<K, T>::resize(size_t key) {
 	bool flag = false;
 	if (key > table.size()) {
 		table.resize(key);
@@ -354,10 +392,10 @@ bool HashTable<K, T>::resize(unsigned int key) {
 /*
  * CharacterFrequencyNode Implementation
  */
-CharacterFrequencyNode::CharacterFrequencyNode(unsigned int first_,
-		unsigned int second_) {
-	first = first_;
-	second = second_;
+CharacterFrequencyNode::CharacterFrequencyNode(unsigned int frequency_,
+		unsigned int characterCode_) {
+	frequency = frequency_;
+	characterCode = characterCode_;
 }
 /*
  * CharacterPriorityQueue Implementation
@@ -430,7 +468,7 @@ bool CharacterPriorityQueue::bufferHandle(string& streamBuffer) {
 }
 
 reference_wrapper<priorityQueueType> CharacterPriorityQueue::getPriorityQueue() {
-	return ref(priorityQueue.get());
+	return ref(priorityQueue);
 }
 
 /*
@@ -520,98 +558,65 @@ int main() {
 	string fileNameOriginal, fileNameEncrypt, fileNameDecrypt;
 	ifstream fileStreamIn;
 	ofstream fileStreamOut;
-	/**
-	 * anti deep if nesting flag
-	 * I could also use an exception model to stop deep nesting, but
-	 * exceptions will hurt performance more. Instead we will use a flag to
-	 * reset a deep nest back to the highest level context in the function
-	 */
-	bool flag = false;
 	/* input/output files are here */
 	fileNameOriginal = "Speech.txt";
 	fileNameEncrypt = "encrypt.data";
 	fileNameDecrypt = "decrypt.txt";
 	cout << "Opening the input file." << endl;
-	if (!fh.readStream(fileNameOriginal, fileStreamIn)
-			|| !fh.writeStream(fileNameEncrypt, fileStreamOut)) {
-		/*
-		 * We check a false value first so we can quickly reference messages
-		 * in the code. Otherwise we would have to scroll a bit down to find if and corresponding
-		 * false message. This is just convenience.
-		 */
-		cout << "[Error] Could not open either the input file \""
-				<< fileNameOriginal << "\" or the input file \""
-				<< fileNameEncrypt << "\"." << endl;
-	} else {
+	try {
+		fh.readStream(fileNameOriginal, fileStreamIn);
+		fh.writeStream(fileNameEncrypt, fileStreamOut);
 		cout << "Parsing input input stream as a character frequency table."
 				<< endl;
 		/* we pass a file stream instead of a reading the whole file
 		 * into memory to reduce memory usage.
 		 */
-		if (!characterPriorityQueue.fileStreamIn(fileStreamIn)) {
+		characterPriorityQueue.fileStreamIn(fileStreamIn);
+		cout << "Building the priority queue." << endl;
+		characterPriorityQueue.buildPriorityQueue();
+		cout << "Building the priority queue tree." << endl;
+		characterPriorityQueueTree.buildTree(
+				characterPriorityQueue.getPriorityQueue());
+		cout << "Building the binary string table." << endl;
+		characterToBinaryTablePtr->set(
+				characterPriorityQueueTree.getCharacterToBinaryTable());
+		// only need for decoding
+		// characterToBinaryTable.buildBinaryStringToCharacterCodeTable();
+		compressorPtr->set(characterToBinaryTablePtr);
+		compressorPtr->encode(fileStreamIn, fileStreamOut);
+		/* encoding successful, now let's clean up */
+		fh.close(fileStreamIn);
+		fh.close(fileStreamOut);
+		cout << "The file \"" << fileNameOriginal
+				<< "\" was successfully encoded as \"" << fileNameEncrypt
+				<< "\"" << endl;
+	} catch (unsigned int &exceptionCode) {
+		switch (exceptionCode) {
+		case 1:
+			cout << "[Error] Could not open either the input file \""
+					<< fileNameOriginal << "\"" << endl;
+			break;
+		case 2:
+			cout << "[Error] Could not open either the output file \""
+					<< fileNameEncrypt << "\"" << endl;
+			break;
+		case 3:
 			cout
 					<< "[Error] Could not parse the input stream as a character frequency table."
 					<< endl;
-		} else {
-			cout << "Building the priority queue." << endl;
-			if (!characterPriorityQueue.buildPriorityQueue()) {
-				cout << "[Error] Could not build the priority queue." << endl;
-			} else {
-				flag = true;
-			}
-		}
-	}
-	// deep if nesting reset
-	if (flag) {
-		flag = false;
-		cout << "Building the priority queue tree." << endl;
-		if (!characterPriorityQueueTree.buildTree(
-				characterPriorityQueue.getPriorityQueue())) {
+			break;
+		case 4:
+			cout << "[Error] Could not build the priority queue." << endl;
+			break;
+		case 5:
 			cout << "[Error] Could not build the priority queue tree." << endl;
-		} else {
-			cout << "Building the binary string table." << endl;
-			if (!characterPriorityQueueTree.buildBinaryTable()) {
-				cout << "[Error] Could not build the binary string table."
-						<< endl;
-			} else {
-				characterToBinaryTablePtr->set(
-						characterPriorityQueueTree.getCharacterToBinaryTable());
-				// only need for decoding
-				// characterToBinaryTable.buildBinaryStringToCharacterCodeTable();
-				compressorPtr->set(characterToBinaryTablePtr);
-				flag = true;
-			}
-		}
-	}
-	if (flag) {
-		flag = false;
-		cout << "Encoding the input file." << endl;
-		if (!compressorPtr->encode(fileStreamIn,)) {
+			break;
+		case 6:
 			cout << "[Error] Could not build the binary string table." << endl;
-		} else {
-			characterToBinaryTablePtr->set(
-					characterPriorityQueueTree.getCharacterToBinaryTable());
-			// only need for decoding
-			// characterToBinaryTable.buildBinaryStringToCharacterCodeTable();
-			compressorPtr->set(characterToBinaryTablePtr);
-			flag = true;
+			break;
 		}
 	}
-	// process each cart from the XML file referencing each product from the product table
-	if (flag && parseCartsXMLFuture.get()) {
-		cout << "Successfully parsed Cart List XML file into cart list nodes."
-				<< endl << "Processing Carts..." << endl;
-		// close the XML files
-		fh.close(fileStreamInProducts);
-		fh.close(fileStreamInCarts);
-		//cout << "XML Files successfully parsed!" << endl;
-		if (parser.cartListXMLNodetoObject(CartsXML, cartList, productTable)) {
-			if (fh.writeString(fileNameCartsList, cartList.toString())) {
-				cout << "Carts list written to \"" << fileNameCartsList << "\""
-						<< endl;
-			}
-		}
-	}
+
 	cout << "Enter any key to exit..." << endl;
 	string temp;
 	getline(cin, temp);

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<diagram program="umlet" version="14.2.0">
+<diagram program="umlet" version="14.2">
   <zoom_level>9</zoom_level>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>792</x>
-      <y>126</y>
+      <x>882</x>
+      <y>135</y>
       <w>441</w>
       <h>153</h>
     </coordinates>
@@ -25,8 +25,8 @@ shared_ptr&lt;HashTable&lt;unsigned int, string&gt;&gt; getCharacterToBinaryTabl
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>1017</x>
-      <y>270</y>
+      <x>1179</x>
+      <y>279</y>
       <w>27</w>
       <h>54</h>
     </coordinates>
@@ -37,8 +37,8 @@ shared_ptr&lt;HashTable&lt;unsigned int, string&gt;&gt; getCharacterToBinaryTabl
     <id>UMLClass</id>
     <coordinates>
       <x>0</x>
-      <y>126</y>
-      <w>351</w>
+      <y>135</y>
+      <w>441</w>
       <h>153</h>
     </coordinates>
     <panel_attributes>FileHandler
@@ -47,17 +47,18 @@ shared_ptr&lt;HashTable&lt;unsigned int, string&gt;&gt; getCharacterToBinaryTabl
 --
 FileHandler()
 ~FileHandler()
-bool readStream(string fileName, ifstream&amp; fileStream)
-bool writeStream(string fileName, ofstream&amp; fileStream)
+bool readStream(string fileName, ifstream&amp; fileStream) throw (unsigned int)
+bool writeStream(string fileName, ofstream&amp; fileStream) throw (unsigned int)
 bool writeString(string fileName, string stringValue)
-bool close(ifstream&amp; fileStream)</panel_attributes>
+bool close(ifstream&amp; fileStream) throw (unsigned int)
+bool close(ofstream&amp; fileStream) throw (unsigned int)</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
       <x>0</x>
-      <y>0</y>
+      <y>9</y>
       <w>324</w>
       <h>72</h>
     </coordinates>
@@ -70,8 +71,8 @@ By: Branden Lee</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>162</x>
-      <y>324</y>
+      <x>252</x>
+      <y>333</y>
       <w>288</w>
       <h>72</h>
     </coordinates>
@@ -86,8 +87,8 @@ bool operator()(const T &amp;lhs, const T &amp;rhs) const</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>63</x>
-      <y>441</y>
+      <x>153</x>
+      <y>450</y>
       <w>531</w>
       <h>108</h>
     </coordinates>
@@ -96,37 +97,36 @@ bg=orange
 --
 
 --
-unsigned int first
-unsigned int second
-CharacterFrequencyNode(unsigned int first_, unsigned int second_)
+unsigned int frequency
+unsigned int characterCode
+CharacterFrequencyNode(unsigned int frequency_, unsigned int characterCode_)
 bool operator&lt;(const CharacterFrequencyNode &amp;lhs, const CharacterFrequencyNode &amp;rhs)</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>954</x>
-      <y>306</y>
+      <x>1116</x>
+      <y>315</y>
       <w>234</w>
-      <h>153</h>
+      <h>108</h>
     </coordinates>
     <panel_attributes>CharacterPriorityQueueTreeNode
 bg=yellow
 --
-CharacterPriorityQueueTreeNode *left
-CharacterPriorityQueueTreeNode *right
-unsigned int characterCode
-bool leafFlag
+
 --
 CharacterPriorityQueueTreeNode()
-~CharacterPriorityQueueTreeNode()</panel_attributes>
+virtual ~CharacterPriorityQueueTreeNode()
+virtual bool isLeaf()
+virtual bool isBranch()</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1098</x>
-      <y>477</y>
+      <x>1233</x>
+      <y>639</y>
       <w>486</w>
       <h>198</h>
     </coordinates>
@@ -150,8 +150,8 @@ unsigned int binaryStringToCharacterCode(string characterBinaryString)</panel_at
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>666</x>
-      <y>270</y>
+      <x>756</x>
+      <y>279</y>
       <w>27</w>
       <h>90</h>
     </coordinates>
@@ -161,8 +161,8 @@ unsigned int binaryStringToCharacterCode(string characterBinaryString)</panel_at
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1260</x>
-      <y>126</y>
+      <x>1350</x>
+      <y>135</y>
       <w>369</w>
       <h>99</h>
     </coordinates>
@@ -179,30 +179,30 @@ bool decode(istream&amp; streamIn, ostream&amp; streamOut)</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>1350</x>
-      <y>216</y>
+      <x>1674</x>
+      <y>225</y>
       <w>27</w>
-      <h>279</h>
+      <h>432</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>10.0;290.0;10.0;10.0</additional_attributes>
+    <additional_attributes>10.0;460.0;10.0;10.0</additional_attributes>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
       <x>0</x>
-      <y>81</y>
-      <w>1008</w>
+      <y>90</y>
+      <w>1269</w>
       <h>27</h>
     </coordinates>
-    <panel_attributes>using priorityQueueType = std::priority_queue&lt;CharacterFrequencyNode, vector&lt;CharacterFrequencyNode&gt;, CharacterPriorityQueueCompare&lt;CharacterFrequencyNode&gt; &gt;</panel_attributes>
+    <panel_attributes>using priorityQueueType = std::priority_queue&lt;shared_ptr&lt;CharacterFrequencyNode&gt;, vector&lt;shared_ptr&lt;CharacterFrequencyNode&gt;&gt;, CharacterPriorityQueueCompare&lt;shared_ptr&lt;CharacterFrequencyNode&gt;&gt;&gt;</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>378</x>
-      <y>126</y>
+      <x>468</x>
+      <y>135</y>
       <w>387</w>
       <h>153</h>
     </coordinates>
@@ -223,8 +223,8 @@ reference_wrapper&lt;priorityQueueType&gt; getPriorityQueue()</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>396</x>
-      <y>270</y>
+      <x>486</x>
+      <y>279</y>
       <w>27</w>
       <h>72</h>
     </coordinates>
@@ -234,8 +234,8 @@ reference_wrapper&lt;priorityQueueType&gt; getPriorityQueue()</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>513</x>
-      <y>270</y>
+      <x>603</x>
+      <y>279</y>
       <w>27</w>
       <h>189</h>
     </coordinates>
@@ -245,67 +245,67 @@ reference_wrapper&lt;priorityQueueType&gt; getPriorityQueue()</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>855</x>
-      <y>270</y>
+      <x>900</x>
+      <y>279</y>
       <w>27</w>
-      <h>225</h>
+      <h>378</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>10.0;230.0;10.0;10.0</additional_attributes>
+    <additional_attributes>10.0;400.0;10.0;10.0</additional_attributes>
   </element>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>981</x>
-      <y>504</y>
-      <w>135</w>
+      <x>1071</x>
+      <y>666</y>
+      <w>180</w>
       <h>27</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>10.0;10.0;130.0;10.0</additional_attributes>
+    <additional_attributes>10.0;10.0;180.0;10.0</additional_attributes>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>612</x>
-      <y>558</y>
+      <x>702</x>
+      <y>747</y>
       <w>279</w>
       <h>207</h>
     </coordinates>
     <panel_attributes>HashTable&lt;K keyType, T valueType&gt;
 --
 vector&lt;pair&lt;K, T&gt;*&gt; table
-const unsigned int insertAttempts = 5
+unsigned int insertAttempts
+hash&lt;K&gt; hashT;
+hash&lt;size_t&gt; hashSize;
 --
 HashTable()
-HashTable(unsigned int size)
+HashTable(size_t size)
 ~HashTable()
 bool insert(K key, T val)
 T at(K key)
-T atIndex(unsigned int index)
-unsigned int hash(K key)
-unsigned int hash(unsigned int key)
-unsigned int size()
-bool resize(unsigned int key);</panel_attributes>
+T atIndex(size_t index)
+size_t size()
+bool resize(size_t key);</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>810</x>
-      <y>513</y>
+      <x>900</x>
+      <y>675</y>
       <w>99</w>
-      <h>63</h>
+      <h>90</h>
     </coordinates>
     <panel_attributes>lt=&lt;.
 &lt;&lt;instanceOf&gt;&gt;</panel_attributes>
-    <additional_attributes>10.0;50.0;10.0;10.0</additional_attributes>
+    <additional_attributes>10.0;80.0;10.0;10.0</additional_attributes>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>585</x>
-      <y>342</y>
+      <x>675</x>
+      <y>351</y>
       <w>189</w>
       <h>45</h>
     </coordinates>
@@ -318,8 +318,8 @@ characterFrequencyTable</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>765</x>
-      <y>477</y>
+      <x>855</x>
+      <y>639</y>
       <w>225</w>
       <h>45</h>
     </coordinates>
@@ -332,13 +332,79 @@ characterCodeToBinaryStringTable</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>648</x>
-      <y>378</y>
+      <x>738</x>
+      <y>387</y>
       <w>99</w>
-      <h>198</h>
+      <h>378</h>
     </coordinates>
     <panel_attributes>lt=&lt;.
 &lt;&lt;instanceOf&gt;&gt;</panel_attributes>
-    <additional_attributes>10.0;200.0;10.0;10.0</additional_attributes>
+    <additional_attributes>10.0;400.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>927</x>
+      <y>459</y>
+      <w>360</w>
+      <h>126</h>
+    </coordinates>
+    <panel_attributes>CharacterPriorityQueueTreeLeaf
+bg=yellow
+--
+shared_ptr&lt;CharacterFrequencyNode&gt; characterFrequencyNode
+--
+CharacterPriorityQueueTreeLeaf()
+virtual ~CharacterPriorityQueueTreeLeaf()
+virtual bool isLeaf()
+virtual bool isBranch()
+shared_ptr&lt;CharacterFrequencyNode&gt; getCharacterNode()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1152</x>
+      <y>414</y>
+      <w>81</w>
+      <h>63</h>
+    </coordinates>
+    <panel_attributes>lt=.&gt;
+&lt;&lt;extends&gt;&gt;</panel_attributes>
+    <additional_attributes>10.0;50.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1314</x>
+      <y>459</y>
+      <w>333</w>
+      <h>153</h>
+    </coordinates>
+    <panel_attributes>CharacterPriorityQueueTreeBranch
+bg=yellow
+--
+unique_ptr&lt;CharacterPriorityQueueTreeNode&gt; left
+unique_ptr&lt;CharacterPriorityQueueTreeNode&gt; right
+--
+CharacterPriorityQueueTreeBranch()
+~CharacterPriorityQueueTreeBranch()
+virtual bool isLeaf()
+virtual bool isBranch()
+unique_ptr&lt;CharacterPriorityQueueTreeNode&gt; getLeft()
+unique_ptr&lt;CharacterPriorityQueueTreeNode&gt; getRight()</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1332</x>
+      <y>414</y>
+      <w>81</w>
+      <h>63</h>
+    </coordinates>
+    <panel_attributes>lt=.&gt;
+&lt;&lt;extends&gt;&gt;</panel_attributes>
+    <additional_attributes>10.0;50.0;10.0;10.0</additional_attributes>
   </element>
 </diagram>
