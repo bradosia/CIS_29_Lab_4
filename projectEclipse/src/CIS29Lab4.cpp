@@ -30,6 +30,7 @@
 #include <cstring>
 #include <memory>		// std::unique_ptr
 #include <functional>	// std::hash
+#include <bitset>		// std::bitset
 using namespace std;
 
 /** Buffer size for reading in files for parsing */
@@ -53,11 +54,11 @@ public:
 	 @param string File name to open
 	 @return True on file open successful and false in not
 	 */
-	bool readStream(string fileName, ifstream& fileStream) throw (unsigned int);
-	bool writeStream(string fileName, ofstream& fileStream) throw (unsigned int);
+	bool readStream(string fileName, ifstream& fileStream);
+	bool writeStream(string fileName, ofstream& fileStream);
 	bool writeString(string fileName, string stringValue);
-	bool close(ifstream& fileStream) throw (unsigned int);
-	bool close(ofstream& fileStream) throw (unsigned int);
+	bool close(ifstream& fileStream);
+	bool close(ofstream& fileStream);
 };
 
 /**
@@ -81,8 +82,8 @@ public:
 	~HashTable() {
 	}
 	bool insert(K key, T val);
-	T at(K key);
-	T atIndex(size_t index);
+	bool at(K key, T& val);
+	bool atIndex(size_t index, K& key, T& val);
 	size_t size();
 	bool resize(size_t key);
 };
@@ -102,6 +103,74 @@ public:
 	bool operator<(const CharacterFrequencyNode &rhs) {
 		return frequency < rhs.frequency;
 	}
+	bool operator>(const CharacterFrequencyNode &rhs) {
+		return frequency > rhs.frequency;
+	}
+};
+
+/**
+ @class CharacterPriorityQueueTreeNode
+ */
+class CharacterPriorityQueueTreeNode {
+private:
+public:
+	unsigned int frequency;
+	CharacterPriorityQueueTreeNode() :
+			frequency(0) {
+
+	}
+	virtual ~CharacterPriorityQueueTreeNode() {
+
+	}
+	unsigned int getFrequency();
+	virtual bool isLeaf() {
+		return false;
+	}
+	virtual bool isBranch() {
+		return false;
+	}
+};
+
+/**
+ @class CharacterPriorityQueueTreeLeaf
+ */
+class CharacterPriorityQueueTreeLeaf: public CharacterPriorityQueueTreeNode {
+private:
+	shared_ptr<CharacterFrequencyNode> characterFrequencyNode;
+public:
+	CharacterPriorityQueueTreeLeaf(
+			shared_ptr<CharacterFrequencyNode> characterNode) :
+			characterFrequencyNode(characterNode) {
+		frequency = characterNode->frequency;
+	}
+	~CharacterPriorityQueueTreeLeaf() {
+
+	}
+	bool isLeaf();
+	bool isBranch();
+	shared_ptr<CharacterFrequencyNode> getCharacterNode();
+};
+
+/**
+ @class CharacterPriorityQueueTreeBranch
+ */
+class CharacterPriorityQueueTreeBranch: public CharacterPriorityQueueTreeNode {
+private:
+	shared_ptr<CharacterPriorityQueueTreeNode> left, right;
+public:
+	CharacterPriorityQueueTreeBranch(
+			shared_ptr<CharacterPriorityQueueTreeNode> left_,
+			shared_ptr<CharacterPriorityQueueTreeNode> right_) :
+			left(left_), right(right_) {
+		frequency = left_->getFrequency() + right_->getFrequency();
+	}
+	~CharacterPriorityQueueTreeBranch() {
+
+	}
+	bool isLeaf();
+	bool isBranch();
+	shared_ptr<CharacterPriorityQueueTreeNode> getLeft();
+	shared_ptr<CharacterPriorityQueueTreeNode> getRight();
 };
 
 /**
@@ -110,8 +179,9 @@ public:
  */
 template<class T>
 class CharacterPriorityQueueCompare {
+public:
 	bool operator()(const T &lhs, const T &rhs) const {
-		return *lhs < *rhs;
+		return lhs->getFrequency() > rhs->getFrequency();
 	}
 };
 
@@ -120,17 +190,18 @@ class CharacterPriorityQueueCompare {
  * using is used rather than typedef because of this forum:
  * https://stackoverflow.com/questions/10747810/what-is-the-difference-between-typedef-and-using-in-c11
  */
-using priorityQueueType = std::priority_queue<shared_ptr<CharacterFrequencyNode>, vector<shared_ptr<CharacterFrequencyNode>>, CharacterPriorityQueueCompare<shared_ptr<CharacterFrequencyNode>>>;
+using priorityQueueType = std::priority_queue<shared_ptr<CharacterPriorityQueueTreeNode>, vector<shared_ptr<CharacterPriorityQueueTreeNode>>, CharacterPriorityQueueCompare<shared_ptr<CharacterPriorityQueueTreeNode>>>;
 
 /**
- * @class CharacterPriorityQueue
+ * @class CharacterPriorityQueueF
  * document -> HashTable -> priority_queue -> set -> binary string \n
  */
 class CharacterPriorityQueue {
 private:
-	/** HashTable<character code, character frequency> */
-	HashTable<unsigned int, unsigned int*> characterFrequencyTable;
-	unique_ptr<priorityQueueType> priorityQueue;
+	/** HashTable<character code, character frequency>
+	 * character frequency is a shared pointer to make it easy to increment */
+	HashTable<unsigned int, shared_ptr<unsigned int>> characterFrequencyTable;
+	priorityQueueType priorityQueue;
 public:
 	CharacterPriorityQueue() {
 	}
@@ -154,66 +225,32 @@ public:
 	reference_wrapper<priorityQueueType> getPriorityQueue();
 };
 
-class CharacterPriorityQueueTreeNode {
-public:
-	CharacterPriorityQueueTreeNode() {
-
-	}
-	virtual ~CharacterPriorityQueueTreeNode() {
-
-	}
-	virtual bool isLeaf();
-	virtual bool isBranch();
-};
-
-class CharacterPriorityQueueTreeLeaf: CharacterPriorityQueueTreeNode {
-private:
-	shared_ptr<CharacterFrequencyNode> characterFrequencyNode;
-public:
-	CharacterPriorityQueueTreeLeaf() {
-
-	}
-	~CharacterPriorityQueueTreeLeaf() {
-
-	}
-	bool isLeaf();
-	bool isBranch();
-	shared_ptr<CharacterFrequencyNode> getCharacterNode();
-};
-
-class CharacterPriorityQueueTreeBranch: CharacterPriorityQueueTreeNode {
-private:
-	unique_ptr<CharacterPriorityQueueTreeNode> left, right;
-public:
-	CharacterPriorityQueueTreeBranch() {
-
-	}
-	~CharacterPriorityQueueTreeBranch() {
-
-	}
-	bool isLeaf();
-	bool isBranch();
-	unique_ptr<CharacterPriorityQueueTreeNode> getLeft();
-	unique_ptr<CharacterPriorityQueueTreeNode> getRight();
-};
-
 /**
  @class CharacterPriorityQueueTree
  Tables to convert character codes to binary strings and back \n
  */
 class CharacterPriorityQueueTree {
 private:
-	CharacterPriorityQueueTreeNode characterPriorityQueueTreeNodeParent;
+	shared_ptr<CharacterPriorityQueueTreeNode> characterPriorityQueueTreePtr;
 	/** HashTable<unsigned int, string> */
-	shared_ptr<HashTable<unsigned int, string>> characterToBinaryTable;
+	shared_ptr<HashTable<unsigned int, string>> characterToBinaryTablePtr;
 public:
-	CharacterPriorityQueueTree();
+	CharacterPriorityQueueTree() {
+
+	}
+	~CharacterPriorityQueueTree() {
+
+	}
 	/**
-	 * @param priority queue reference
+	 * build tree will edit the priority queue so we must pass by value
+	 * to prevent tampering
+	 * @param priority queue copy
 	 * @return true on build success, false on build failure
 	 */
-	bool buildTree(priorityQueueType& priorityQueue);
+	bool buildTree(priorityQueueType priorityQueue);
 	bool buildBinaryTable();
+	void buildBinaryTableEncode(shared_ptr<CharacterPriorityQueueTreeNode> node,
+			string binaryString);
 	shared_ptr<HashTable<unsigned int, string>> getCharacterToBinaryTable();
 };
 
@@ -236,12 +273,8 @@ public:
 	 * to keep this class "slim", we will build our table elsewhere and move the pointer
 	 * ownership into this class.
 	 */
-	void set(shared_ptr<HashTable<unsigned int, string>> tablePtr) {
-		characterCodeToBinaryStringTablePtr = tablePtr;
-	}
-	void set(shared_ptr<HashTable<string, unsigned int>> tablePtr) {
-		binaryStringToCharacterCodeTablePtr = tablePtr;
-	}
+	void set(shared_ptr<HashTable<unsigned int, string>> tablePtr);
+	void set(shared_ptr<HashTable<string, unsigned int>> tablePtr);
 	/**
 	 * build the binaryStringToCharacterCodeTable from the characterCodeToBinaryStringTable
 	 */
@@ -255,44 +288,46 @@ public:
 	 * @param characterCode Character character code
 	 * @return Character Binary String
 	 */
-	string characterCodeToBinaryString(unsigned int characterCode);
+	bool characterCodeToBinaryString(unsigned int characterCode,
+			string& binaryString);
 	/**
 	 * Primary decoding method
 	 * @param characterBinaryString Character Binary String
 	 * @return character code
 	 */
-	unsigned int binaryStringToCharacterCode(string characterBinaryString);
+	bool binaryStringToCharacterCode(string binaryString,
+			unsigned int characterCode);
 };
 
 class Compressor {
 private:
-	shared_ptr<CharacterToBinaryTable> characterToBinaryTable;
+	shared_ptr<CharacterToBinaryTable> characterToBinaryTablePtr;
 public:
 	void set(shared_ptr<CharacterToBinaryTable> tablePtr);
 	bool encode(istream& streamIn, ostream& streamOut);
+	bool encodeBufferHandle(string& streamBufferIn, string& streamBufferOut,
+			ostream& streamOut);
 	bool decode(istream& streamIn, ostream& streamOut);
 };
 
 /*
  * FileHandler Implementation
  */
-bool FileHandler::readStream(string fileName, ifstream& fileStream)
-		throw (unsigned int) {
+bool FileHandler::readStream(string fileName, ifstream& fileStream) {
 	fileStream.open(fileName, ios::binary);
 	if (fileStream.is_open()) {
 		return true;
 	}
-	throw 0;
+	throw 1;
 	return false;
 }
 
-bool FileHandler::writeStream(string fileName, ofstream& fileStream)
-		throw (unsigned int) {
-	fileStream.open(fileName);
+bool FileHandler::writeStream(string fileName, ofstream& fileStream) {
+	fileStream.open(fileName, ios::binary);
 	if (fileStream.is_open()) {
 		return true;
 	}
-	throw 1;
+	throw 2;
 	return false;
 }
 
@@ -307,21 +342,21 @@ bool FileHandler::writeString(string fileName, string stringValue) {
 	return false;
 }
 
-bool FileHandler::close(ifstream& fileStream) throw (unsigned int) {
+bool FileHandler::close(ifstream& fileStream) {
 	try {
 		fileStream.close();
 	} catch (...) {
-		throw 0;
+		throw 7;
 		return false;
 	}
 	return true;
 }
 
-bool FileHandler::close(ofstream& fileStream) throw (unsigned int) {
+bool FileHandler::close(ofstream& fileStream) {
 	try {
 		fileStream.close();
 	} catch (...) {
-		throw 0;
+		throw 8;
 		return false;
 	}
 	return true;
@@ -332,46 +367,59 @@ bool FileHandler::close(ofstream& fileStream) throw (unsigned int) {
  */
 template<class K, class T>
 bool HashTable<K, T>::insert(K key, T val) {
+	// will overwrite a key that already exists
+	bool returnValue = false;
 	unsigned int attempts = insertAttempts;
 	K keyOriginal = key;
-	size_t keyInt = hashT(key);
-	bool flag = false;
+	size_t size = table.size();
+	size_t keyInt = hashT(key) % size;
 	for (; attempts > 0; attempts--) {
-		if (table[keyInt] == nullptr) {
+		// bucket does not exist or if it does it will overwrite if the keys match
+		if (!table[keyInt]
+				|| (table[keyInt] && table[keyInt]->first == keyOriginal)) {
 			table[keyInt] = make_unique<pair<K, T>>(keyOriginal, val);
-			flag = true;
+			returnValue = true;
 			break;
 		}
-		keyInt = hashSize(keyInt);
+		keyInt = hashSize(keyInt) % size;
 	}
-	return flag;
+	return returnValue;
 }
 template<class K, class T>
-T HashTable<K, T>::at(K key) {
+bool HashTable<K, T>::at(K key, T& val) {
+	/* 2018-6-7 revision
+	 * no longer throws exception because it creates a large overhead when
+	 * attempting to find lots of bad keys
+	 */
+	bool returnValue = false;
 	unsigned int attempts = insertAttempts;
 	K keyOriginal = key;
-	size_t keyInt = hashT(key);
-	T ret { };
+	size_t size = table.size();
+	size_t keyInt = hashT(key) % size;
 	for (; attempts > 0; attempts--) {
-		if (table[keyInt] != nullptr && table[keyInt]->first == keyOriginal) {
-			ret = table[keyInt]->second;
+		// bucket exists and matches key
+		if (table[keyInt] && table[keyInt]->first == keyOriginal) {
+			val = table[keyInt]->second;
+			returnValue = true;
 			break;
 		}
-		keyInt = hashSize(keyInt);
+		keyInt = hashSize(keyInt) % size;
 	}
-	if (attempts == 0) {
-		throw out_of_range("");
-	}
-	return ret;
+	return returnValue;
 }
 template<class K, class T>
-T HashTable<K, T>::atIndex(size_t index) {
-	pair<K, T>* temp = table[index];
-	if (temp != nullptr) {
-		return temp->second;
-	} else {
-		throw invalid_argument("");
+bool HashTable<K, T>::atIndex(size_t index, K& key, T& val) {
+	/* 2018-6-7 revision
+	 * no longer throws exception because it creates a large overhead when
+	 * trying to traverse the entire hash table
+	 */
+	bool returnValue = false;
+	if (table[index]) {
+		key = table[index]->first;
+		val = table[index]->second;
+		returnValue = true;
 	}
+	return returnValue;
 }
 
 template<class K, class T>
@@ -397,17 +445,49 @@ CharacterFrequencyNode::CharacterFrequencyNode(unsigned int frequency_,
 	frequency = frequency_;
 	characterCode = characterCode_;
 }
+
+/*
+ * CharacterPriorityQueueTreeNode Implementation
+ */
+unsigned int CharacterPriorityQueueTreeNode::getFrequency() {
+	return frequency;
+}
+/*
+ * CharacterPriorityQueueTreeLeaf Implementation
+ */
+bool CharacterPriorityQueueTreeLeaf::isLeaf() {
+	return true;
+}
+bool CharacterPriorityQueueTreeLeaf::isBranch() {
+	return false;
+}
+shared_ptr<CharacterFrequencyNode> CharacterPriorityQueueTreeLeaf::getCharacterNode() {
+	return characterFrequencyNode;
+}
+
+/*
+ * CharacterPriorityQueueTreeBranch Implementation
+ */
+bool CharacterPriorityQueueTreeBranch::isLeaf() {
+	return false;
+}
+bool CharacterPriorityQueueTreeBranch::isBranch() {
+	return true;
+}
+shared_ptr<CharacterPriorityQueueTreeNode> CharacterPriorityQueueTreeBranch::getLeft() {
+	return left;
+}
+shared_ptr<CharacterPriorityQueueTreeNode> CharacterPriorityQueueTreeBranch::getRight() {
+	return right;
+}
 /*
  * CharacterPriorityQueue Implementation
  */
 bool CharacterPriorityQueue::fileStreamIn(istream& streamIn) {
 	/* Parsing Steps:
-	 * 1. create document node. If stack is empty then document node is the parent.
-	 * 2. grab first <tag> and add push on stack.
-	 *    future nodes will be a child of top of the stack
-	 * 3. grab child node and push it to the stack.
-	 * 4. value between <child></child> is added to the node on top of the stack
-	 * 5. if </tag> found then it is popped off the stack
+	 * 1. read in buffer
+	 * 2. go through each character in buffer
+	 *    add the character code as hash table key and value as the frequency
 	 * */
 	unsigned int fileSize, filePos, bufferSize, mode;
 	string streamBuffer;
@@ -417,13 +497,12 @@ bool CharacterPriorityQueue::fileStreamIn(istream& streamIn) {
 	streamBuffer = "";
 	char bufferInChar[PRIORITY_QUEUE_PARSER_BUFFER_SIZE];
 	streamIn.seekg(0, ios::end); // set the pointer to the end
-	fileSize = (unsigned int) streamIn.tellg(); // get the length of the file
+	fileSize = static_cast<unsigned int>(streamIn.tellg()); // get the length of the file
 	streamIn.seekg(0, ios::beg); // set the pointer to the beginning
 	while (filePos < fileSize) {
 		streamIn.seekg(filePos, ios::beg); // seek new position
 		if (filePos + bufferSize > fileSize) {
 			bufferSize = fileSize - filePos;
-			memset(bufferInChar, 0, sizeof(bufferInChar)); // zero out buffer
 		}
 		memset(bufferInChar, 0, sizeof(bufferInChar)); // zero out buffer
 		streamIn.read(bufferInChar, bufferSize);
@@ -441,29 +520,42 @@ bool CharacterPriorityQueue::bufferHandle(string& streamBuffer) {
 	/* characters are placed into a hash table
 	 * hashTable[CharacterCode] = CharacterFrequency
 	 */
-	unsigned int i, n, characterCode;
-	bool found;
-	unsigned int* characterFrequencyPtr;
+	size_t i, n;
 	n = streamBuffer.size();
+	unsigned int characterCode;
+	shared_ptr<unsigned int> characterFrequencyPtr;
 	for (i = 0; i < n; i++) {
-		found = false;
 		characterCode =
 				static_cast<unsigned int>(static_cast<int>(streamBuffer[i]));
-		try {
-			// if there was no exception thrown, the character was found
-			characterFrequencyPtr = characterFrequencyTable.at(characterCode);
-			found = true;
-		} catch (...) {
-			// nothing
-		}
-		if (found) {
+		if (characterFrequencyTable.at(characterCode, characterFrequencyPtr)) {
 			// character exists. increment frequency
-			*characterFrequencyPtr++;
+			(*characterFrequencyPtr)++;
 		} else {
-			characterFrequencyTable.insert(characterCode, new unsigned int(1));
+			characterFrequencyTable.insert(characterCode,
+					make_shared<unsigned int>(1));
 		}
 	}
+	streamBuffer = "";
 	// there actually is no point to the return, but maybe there will be in the future
+	return true;
+}
+
+bool CharacterPriorityQueue::buildPriorityQueue() {
+	size_t i, n;
+	n = characterFrequencyTable.size();
+	unsigned int characterCode;
+	shared_ptr<unsigned int> characterFrequencyPtr;
+	for (i = 0; i < n; i++) {
+		if (characterFrequencyTable.atIndex(i, characterCode,
+				characterFrequencyPtr)) {
+			priorityQueue.push(
+					dynamic_pointer_cast<CharacterPriorityQueueTreeNode>(
+							make_shared<CharacterPriorityQueueTreeLeaf>(
+									make_shared<CharacterFrequencyNode>(
+											*characterFrequencyPtr,
+											characterCode))));
+		}
+	}
 	return true;
 }
 
@@ -472,68 +564,220 @@ reference_wrapper<priorityQueueType> CharacterPriorityQueue::getPriorityQueue() 
 }
 
 /*
- * CharacterPriorityQueueTreeNode Implementation
+ * CharacterPriorityQueueTree Implementation
  */
-CharacterPriorityQueueTreeNode::CharacterPriorityQueueTreeNode() {
-	left = right = nullptr;
-	characterCode = 0;
-	leafFlag = false;
+bool CharacterPriorityQueueTree::buildTree(priorityQueueType priorityQueue) {
+	if (priorityQueue.size() > 0) {
+		shared_ptr<CharacterPriorityQueueTreeNode> left;
+		shared_ptr<CharacterPriorityQueueTreeNode> right;
+		shared_ptr<CharacterPriorityQueueTreeNode> branch;
+		while (priorityQueue.size() > 1) {
+			left = priorityQueue.top();
+			priorityQueue.pop();
+			right = priorityQueue.top();
+			priorityQueue.pop();
+			branch = dynamic_pointer_cast<CharacterPriorityQueueTreeNode>(
+					make_shared<CharacterPriorityQueueTreeBranch>(left, right));
+			priorityQueue.push(branch);
+			if (dynamic_pointer_cast<CharacterPriorityQueueTreeLeaf>(left)) {
+				cout << "left char="
+						<< dynamic_pointer_cast<CharacterPriorityQueueTreeLeaf>(
+								left)->getCharacterNode()->characterCode;
+			}
+			if (dynamic_pointer_cast<CharacterPriorityQueueTreeLeaf>(right)) {
+				cout << " right char="
+						<< dynamic_pointer_cast<CharacterPriorityQueueTreeLeaf>(
+								right)->getCharacterNode()->characterCode;
+			}
+			cout << " left freq=" << left->getFrequency() << " right freq="
+					<< right->getFrequency() << " branch="
+					<< branch->getFrequency() << endl;
+
+		}
+		characterPriorityQueueTreePtr = priorityQueue.top();
+	}
+	return true;
+}
+bool CharacterPriorityQueueTree::buildBinaryTable() {
+	if (!characterToBinaryTablePtr) {
+		characterToBinaryTablePtr =
+				make_shared<HashTable<unsigned int, string>>(255);
+	}
+	if (characterPriorityQueueTreePtr) {
+		buildBinaryTableEncode(characterPriorityQueueTreePtr, "");
+	}
+	size_t i, n;
+	n = characterToBinaryTablePtr->size();
+	unsigned int characterCode;
+	string binaryString;
+	for (i = 0; i < n; i++) {
+		if (characterToBinaryTablePtr->atIndex(i, characterCode,
+				binaryString)) {
+			cout << "-> " << characterCode << " " << binaryString << endl;
+		}
+	}
+	return true;
+}
+void CharacterPriorityQueueTree::buildBinaryTableEncode(
+		shared_ptr<CharacterPriorityQueueTreeNode> node, string binaryString) {
+	if (node->isBranch()) {
+		if (dynamic_pointer_cast<CharacterPriorityQueueTreeBranch>(node)) {
+			buildBinaryTableEncode(
+					dynamic_pointer_cast<CharacterPriorityQueueTreeBranch>(node)->getLeft(),
+					binaryString.append("0"));
+			buildBinaryTableEncode(
+					dynamic_pointer_cast<CharacterPriorityQueueTreeBranch>(node)->getRight(),
+					binaryString.append("1"));
+		}
+	} else {
+		if (dynamic_pointer_cast<CharacterPriorityQueueTreeLeaf>(node)) {
+			characterToBinaryTablePtr->insert(
+					dynamic_pointer_cast<CharacterPriorityQueueTreeLeaf>(node)->getCharacterNode()->characterCode,
+					binaryString);
+		}
+	}
+}
+shared_ptr<HashTable<unsigned int, string>> CharacterPriorityQueueTree::getCharacterToBinaryTable() {
+	return characterToBinaryTablePtr;
 }
 
 /*
  * CharacterToBinaryTable Implementation
  */
+void CharacterToBinaryTable::set(
+		shared_ptr<HashTable<unsigned int, string>> tablePtr) {
+	characterCodeToBinaryStringTablePtr = tablePtr;
+}
+
+void CharacterToBinaryTable::set(
+		shared_ptr<HashTable<string, unsigned int>> tablePtr) {
+	binaryStringToCharacterCodeTablePtr = tablePtr;
+}
 
 void CharacterToBinaryTable::buildBinaryStringToCharacterCodeTable() {
-	unsigned int i, n, n1;
-	/* extend to lower case characters */
-	n = ((int) 'Z') + 1;
-	for (i = (int) 'A'; i < n; i++) {
-		if (charIntToCode39IntTable[i]
-				&& (n1 = charIntToCode39IntTable[i]) > 0) {
-			charIntToCode39IntTable[(unsigned int) tolower(char(i))] =
-					charIntToCode39IntTable[i];
-		}
+	/*
+	 * builds HashTable<binary string, character code>
+	 */
+	if (!binaryStringToCharacterCodeTablePtr) {
+		// we only expect around 255 unique characters
+		binaryStringToCharacterCodeTablePtr = make_shared<
+				HashTable<string, unsigned int>>(255);
 	}
-	/* 2^9 since the longest Code 39 Binary is 9 bits */
-	Code39IntToCharTable.resize(512);
-	// build a binary int to char map
-	n = (unsigned int) charIntToCode39IntTable.size();
+	size_t i, n;
+	n = characterCodeToBinaryStringTablePtr->size();
+	unsigned int characterCode;
+	string binaryString;
 	for (i = 0; i < n; i++) {
-		if (charIntToCode39IntTable[i]
-				&& (n1 = charIntToCode39IntTable[i]) > 0) {
-			// we are worried of bits above 9
-			try {
-				Code39IntToCharTable[n1] = char(i);
-			} catch (...) {
-				// nothing
-			}
+		if (characterCodeToBinaryStringTablePtr->atIndex(i, characterCode,
+				binaryString)) {
+			binaryStringToCharacterCodeTablePtr->insert(binaryString,
+					characterCode);
 		}
 	}
 }
 
-string CharacterToBinaryTable::characterCodeToBinaryString(
-		unsigned int characterCode) {
-	bool returnValue = false;
-	try {
-		charOut = Code39IntToCharTable[intIn];
-		returnValue = true;
-	} catch (...) {
-		// nothing
+void CharacterToBinaryTable::buildCharacterCodeToBinaryStringTable() {
+	/*
+	 * builds HashTable<character code, binary string>
+	 */
+	if (!characterCodeToBinaryStringTablePtr) {
+		// we only expect around 255 unique characters
+		characterCodeToBinaryStringTablePtr = make_shared<
+				HashTable<unsigned int, string>>(255);
 	}
-	return returnValue;
+	size_t i, n;
+	n = binaryStringToCharacterCodeTablePtr->size();
+	string binaryString;
+	unsigned int characterCode;
+	for (i = 0; i < n; i++) {
+		if (binaryStringToCharacterCodeTablePtr->atIndex(i, binaryString,
+				characterCode)) {
+			characterCodeToBinaryStringTablePtr->insert(characterCode,
+					binaryString);
+		}
+	}
 }
 
-unsigned int CharacterToBinaryTable::binaryStringToCharacterCode(
-		string characterBinaryString) {
-	bool returnValue = false;
-	try {
-		intOut = charIntToCode39IntTable[(unsigned int) charIn];
-		returnValue = true;
-	} catch (...) {
-		// nothing
+bool CharacterToBinaryTable::characterCodeToBinaryString(
+		unsigned int characterCode, string& binaryString) {
+	return characterCodeToBinaryStringTablePtr->at(characterCode, binaryString);
+}
+bool CharacterToBinaryTable::binaryStringToCharacterCode(string binaryString,
+		unsigned int characterCode) {
+	return binaryStringToCharacterCodeTablePtr->at(binaryString, characterCode);
+}
+
+/*
+ * Compressor Implementation
+ */
+void Compressor::set(shared_ptr<CharacterToBinaryTable> tablePtr) {
+	characterToBinaryTablePtr = tablePtr;
+}
+
+bool Compressor::encode(istream& streamIn, ostream& streamOut) {
+	/* Parsing Steps:
+	 * 1. read in buffer
+	 * 2. go through each character in buffer
+	 *    add the character code as hash table key and value as the frequency
+	 * */
+	unsigned int fileSize, filePos, bufferSize, mode;
+	string streamBufferIn, streamBufferOut;
+	stack<string> documentStack;
+	bufferSize = PRIORITY_QUEUE_PARSER_BUFFER_SIZE;
+	fileSize = filePos = mode = 0;
+	streamBufferIn = streamBufferOut = "";
+	char bufferInChar[PRIORITY_QUEUE_PARSER_BUFFER_SIZE];
+	streamIn.seekg(0, ios::end); // set the pointer to the end
+	fileSize = static_cast<unsigned int>(streamIn.tellg()); // get the length of the file
+	streamIn.seekg(0, ios::beg); // set the pointer to the beginning
+	while (filePos < fileSize) {
+		streamIn.seekg(filePos, ios::beg); // seek new position
+		if (filePos + bufferSize > fileSize) {
+			bufferSize = fileSize - filePos;
+		}
+		memset(bufferInChar, 0, sizeof(bufferInChar)); // zero out buffer
+		streamIn.read(bufferInChar, bufferSize);
+		streamBufferIn.append(bufferInChar, bufferSize);
+		encodeBufferHandle(streamBufferIn, streamBufferOut, streamOut);
+		// advance buffer
+		filePos += bufferSize;
 	}
-	return returnValue;
+	// handle the remaining buffer
+	encodeBufferHandle(streamBufferIn, streamBufferOut, streamOut);
+	return true;
+}
+bool Compressor::encodeBufferHandle(string& streamBufferIn,
+		string& streamBufferOut, ostream& streamOut) {
+	/* characters are placed into a hash table
+	 * hashTable[CharacterCode] = CharacterFrequency
+	 */
+	size_t i, n;
+	n = streamBufferIn.size();
+	unsigned int characterCode;
+	string binaryString;
+	shared_ptr<unsigned int> characterFrequencyPtr;
+	for (i = 0; i < n; i++) {
+		characterCode =
+				static_cast<unsigned int>(static_cast<int>(streamBufferIn[i]));
+		if (characterToBinaryTablePtr->characterCodeToBinaryString(
+				characterCode, binaryString)) {
+			streamBufferOut.append(binaryString);
+		}
+	}
+	streamBufferIn = "";
+	n = streamBufferOut.size() / 8;
+	for (i = 0; i < n; i++) {
+		std::bitset<8> b(streamBufferOut.substr(0, 8));
+		char c = b.to_ulong();
+		streamOut.write(const_cast<const char*>(&c), 1);
+		streamBufferOut.erase(0, 8);
+	}
+	// there actually is no point to the return, but maybe there will be in the future
+	return true;
+}
+
+bool Compressor::decode(istream& streamIn, ostream& streamOut) {
+	return true;
 }
 
 /*
@@ -578,6 +822,8 @@ int main() {
 		characterPriorityQueueTree.buildTree(
 				characterPriorityQueue.getPriorityQueue());
 		cout << "Building the binary string table." << endl;
+		characterPriorityQueueTree.buildBinaryTable();
+		cout << "Encoding the input file." << endl;
 		characterToBinaryTablePtr->set(
 				characterPriorityQueueTree.getCharacterToBinaryTable());
 		// only need for decoding
@@ -590,14 +836,14 @@ int main() {
 		cout << "The file \"" << fileNameOriginal
 				<< "\" was successfully encoded as \"" << fileNameEncrypt
 				<< "\"" << endl;
-	} catch (unsigned int &exceptionCode) {
+	} catch (int& exceptionCode) {
 		switch (exceptionCode) {
 		case 1:
-			cout << "[Error] Could not open either the input file \""
+			cout << "[Error] Could not open the input file \""
 					<< fileNameOriginal << "\"" << endl;
 			break;
 		case 2:
-			cout << "[Error] Could not open either the output file \""
+			cout << "[Error] Could not open the output file \""
 					<< fileNameEncrypt << "\"" << endl;
 			break;
 		case 3:
@@ -613,6 +859,14 @@ int main() {
 			break;
 		case 6:
 			cout << "[Error] Could not build the binary string table." << endl;
+			break;
+		case 7:
+			cout << "[Error] Could not close the input file \""
+					<< fileNameOriginal << "\"" << endl;
+			break;
+		case 8:
+			cout << "[Error] Could not close the output file \""
+					<< fileNameEncrypt << "\"" << endl;
 			break;
 		}
 	}
