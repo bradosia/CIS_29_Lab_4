@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <diagram program="umlet" version="14.2">
-  <zoom_level>9</zoom_level>
+  <zoom_level>8</zoom_level>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>954</x>
-      <y>126</y>
-      <w>594</w>
-      <h>153</h>
+      <x>848</x>
+      <y>192</y>
+      <w>528</w>
+      <h>136</h>
     </coordinates>
     <panel_attributes>CharacterPriorityQueueTree
 bg=yellow
@@ -26,10 +26,10 @@ shared_ptr&lt;HashTable&lt;unsigned int, string&gt;&gt; getCharacterToBinaryTabl
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>1350</x>
-      <y>270</y>
-      <w>27</w>
-      <h>54</h>
+      <x>1200</x>
+      <y>320</y>
+      <w>24</w>
+      <h>48</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
     <additional_attributes>10.0;40.0;10.0;10.0</additional_attributes>
@@ -38,9 +38,9 @@ shared_ptr&lt;HashTable&lt;unsigned int, string&gt;&gt; getCharacterToBinaryTabl
     <id>UMLClass</id>
     <coordinates>
       <x>0</x>
-      <y>126</y>
-      <w>441</w>
-      <h>153</h>
+      <y>192</y>
+      <w>392</w>
+      <h>136</h>
     </coordinates>
     <panel_attributes>FileHandler
 --
@@ -59,9 +59,9 @@ bool close(ofstream&amp; fileStream) throw (unsigned int)</panel_attributes>
     <id>UMLClass</id>
     <coordinates>
       <x>0</x>
-      <y>0</y>
-      <w>324</w>
-      <h>72</h>
+      <y>80</y>
+      <w>288</w>
+      <h>64</h>
     </coordinates>
     <panel_attributes>UML Diagram
 Lab 4 - Encryption and Compression
@@ -72,10 +72,10 @@ By: Branden Lee</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>252</x>
-      <y>324</y>
-      <w>315</w>
-      <h>81</h>
+      <x>224</x>
+      <y>368</y>
+      <w>280</w>
+      <h>72</h>
     </coordinates>
     <panel_attributes>&lt;class T&gt; CharacterPriorityQueueCompare
 bg=orange
@@ -89,10 +89,10 @@ bool operator&gt;(const CharacterFrequencyNode &amp;rhs)</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>180</x>
-      <y>441</y>
-      <w>531</w>
-      <h>108</h>
+      <x>160</x>
+      <y>472</y>
+      <w>472</w>
+      <h>96</h>
     </coordinates>
     <panel_attributes>CharacterFrequencyNode
 bg=orange
@@ -108,10 +108,10 @@ bool operator&lt;(const CharacterFrequencyNode &amp;lhs, const CharacterFrequenc
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1287</x>
-      <y>306</y>
-      <w>234</w>
-      <h>126</h>
+      <x>1144</x>
+      <y>352</y>
+      <w>248</w>
+      <h>112</h>
     </coordinates>
     <panel_attributes>CharacterPriorityQueueTreeNode
 bg=yellow
@@ -128,10 +128,10 @@ virtual bool isBranch()</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1449</x>
-      <y>657</y>
-      <w>540</w>
-      <h>198</h>
+      <x>1392</x>
+      <y>664</y>
+      <w>480</w>
+      <h>176</h>
     </coordinates>
     <panel_attributes>CharacterToBinaryTable
 bg=green
@@ -153,10 +153,10 @@ bool binaryStringToCharacterCode(string characterBinaryString, unsigned int char
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>810</x>
-      <y>270</y>
-      <w>27</w>
-      <h>81</h>
+      <x>720</x>
+      <y>320</y>
+      <w>24</w>
+      <h>72</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
     <additional_attributes>10.0;70.0;10.0;10.0</additional_attributes>
@@ -164,39 +164,44 @@ bool binaryStringToCharacterCode(string characterBinaryString, unsigned int char
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1575</x>
-      <y>126</y>
-      <w>369</w>
-      <h>99</h>
+      <x>1400</x>
+      <y>192</y>
+      <w>344</w>
+      <h>152</h>
     </coordinates>
-    <panel_attributes>Compressor
+    <panel_attributes>Compressor : StreamScanner
 bg=green
 --
-shared_ptr&lt;CharacterToBinaryTable&gt; characterToBinaryTable
+shared_ptr&lt;CharacterToBinaryTable&gt; characterToBinaryTablePtr
+string streamBufferOut
+ostream streamOut
 --
+Compressor()
+~Compressor()
 void set(shared_ptr&lt;CharacterToBinaryTable&gt; tablePtr)
-bool encode(istream&amp; streamIn, ostream&amp; streamOut)
-bool decode(istream&amp; streamIn, ostream&amp; streamOut)</panel_attributes>
+bool stream(istream&amp; streamIn, ostream&amp; streamOut)
+bool bufferHandle(string&amp; streamBuffer, bool final)
+bool bufferOutHandle(string&amp; streamBufferOut, bool final)</panel_attributes>
     <additional_attributes/>
   </element>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>1899</x>
-      <y>216</y>
-      <w>27</w>
-      <h>459</h>
+      <x>1688</x>
+      <y>336</y>
+      <w>24</w>
+      <h>344</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>10.0;490.0;10.0;10.0</additional_attributes>
+    <additional_attributes>10.0;410.0;10.0;10.0</additional_attributes>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
       <x>0</x>
-      <y>81</y>
-      <w>1269</w>
-      <h>27</h>
+      <y>152</y>
+      <w>1128</w>
+      <h>24</h>
     </coordinates>
     <panel_attributes>using priorityQueueType = std::priority_queue&lt;shared_ptr&lt;CharacterPriorityQueueTreeNode&gt;, vector&lt;shared_ptr&lt;CharacterPriorityQueueTreeNode&gt; &gt;, CharacterPriorityQueueCompare&lt;shared_ptr&lt;CharacterPriorityQueueTreeNode&gt; &gt; &gt;</panel_attributes>
     <additional_attributes/>
@@ -204,12 +209,12 @@ bool decode(istream&amp; streamIn, ostream&amp; streamOut)</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>468</x>
-      <y>126</y>
-      <w>459</w>
-      <h>153</h>
+      <x>416</x>
+      <y>192</y>
+      <w>408</w>
+      <h>136</h>
     </coordinates>
-    <panel_attributes>CharacterPriorityQueue
+    <panel_attributes>CharacterPriorityQueue : StreamScanner
 bg=orange
 --
 HashTable&lt;unsigned int, shared_ptr&lt;unsigned int&gt; &gt; characterFrequencyTable
@@ -217,8 +222,8 @@ unique_ptr&lt;priorityQueueType&gt; priorityQueue
 --
 CharacterPriorityQueue()
 ~CharacterPriorityQueue()
-bool fileStreamIn(istream&amp; streamIn)
-bool bufferHandle(string&amp; streamBuffer)
+bool stream(istream&amp; streamIn)
+bool bufferHandle(string&amp; streamBuffer, bool final)
 bool buildPriorityQueue()
 reference_wrapper&lt;priorityQueueType&gt; getPriorityQueue()</panel_attributes>
     <additional_attributes/>
@@ -226,10 +231,10 @@ reference_wrapper&lt;priorityQueueType&gt; getPriorityQueue()</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>486</x>
-      <y>270</y>
-      <w>27</w>
-      <h>72</h>
+      <x>432</x>
+      <y>320</y>
+      <w>24</w>
+      <h>64</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
     <additional_attributes>10.0;60.0;10.0;10.0</additional_attributes>
@@ -237,10 +242,10 @@ reference_wrapper&lt;priorityQueueType&gt; getPriorityQueue()</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>630</x>
-      <y>270</y>
-      <w>27</w>
-      <h>189</h>
+      <x>560</x>
+      <y>320</y>
+      <w>24</w>
+      <h>168</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
     <additional_attributes>10.0;190.0;10.0;10.0</additional_attributes>
@@ -248,10 +253,10 @@ reference_wrapper&lt;priorityQueueType&gt; getPriorityQueue()</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>972</x>
-      <y>270</y>
-      <w>27</w>
-      <h>405</h>
+      <x>864</x>
+      <y>320</y>
+      <w>24</w>
+      <h>360</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
     <additional_attributes>10.0;430.0;10.0;10.0</additional_attributes>
@@ -259,21 +264,21 @@ reference_wrapper&lt;priorityQueueType&gt; getPriorityQueue()</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>1143</x>
-      <y>684</y>
-      <w>324</w>
-      <h>27</h>
+      <x>1016</x>
+      <y>688</y>
+      <w>392</w>
+      <h>24</h>
     </coordinates>
     <panel_attributes>lt=&lt;-</panel_attributes>
-    <additional_attributes>10.0;10.0;340.0;10.0</additional_attributes>
+    <additional_attributes>10.0;10.0;470.0;10.0</additional_attributes>
   </element>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>774</x>
-      <y>756</y>
-      <w>279</w>
-      <h>207</h>
+      <x>688</x>
+      <y>752</y>
+      <w>248</w>
+      <h>184</h>
     </coordinates>
     <panel_attributes>HashTable&lt;K keyType, T valueType&gt;
 --
@@ -295,10 +300,10 @@ bool resize(size_t key);</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>972</x>
-      <y>693</y>
-      <w>99</w>
-      <h>81</h>
+      <x>864</x>
+      <y>696</y>
+      <w>88</w>
+      <h>72</h>
     </coordinates>
     <panel_attributes>lt=&lt;.
 &lt;&lt;instanceOf&gt;&gt;</panel_attributes>
@@ -307,10 +312,10 @@ bool resize(size_t key);</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>747</x>
-      <y>333</y>
-      <w>189</w>
-      <h>45</h>
+      <x>664</x>
+      <y>376</y>
+      <w>168</w>
+      <h>40</h>
     </coordinates>
     <panel_attributes>_object: HashTable_
 bg=orange
@@ -321,10 +326,10 @@ characterFrequencyTable</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>927</x>
-      <y>657</y>
-      <w>225</w>
-      <h>45</h>
+      <x>824</x>
+      <y>664</y>
+      <w>200</w>
+      <h>40</h>
     </coordinates>
     <panel_attributes>_object: HashTable_
 bg=yellow
@@ -335,10 +340,10 @@ characterCodeToBinaryStringTable</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>810</x>
-      <y>369</y>
-      <w>99</w>
-      <h>405</h>
+      <x>720</x>
+      <y>408</y>
+      <w>88</w>
+      <h>360</h>
     </coordinates>
     <panel_attributes>lt=&lt;.
 &lt;&lt;instanceOf&gt;&gt;</panel_attributes>
@@ -347,10 +352,10 @@ characterCodeToBinaryStringTable</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>999</x>
-      <y>477</y>
-      <w>378</w>
-      <h>126</h>
+      <x>888</x>
+      <y>504</y>
+      <w>336</w>
+      <h>112</h>
     </coordinates>
     <panel_attributes>CharacterPriorityQueueTreeLeaf
 bg=yellow
@@ -367,10 +372,10 @@ shared_ptr&lt;CharacterFrequencyNode&gt; getCharacterNode()</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>1323</x>
-      <y>423</y>
-      <w>81</w>
-      <h>72</h>
+      <x>1176</x>
+      <y>456</y>
+      <w>72</w>
+      <h>64</h>
     </coordinates>
     <panel_attributes>lt=.&gt;
 &lt;&lt;extends&gt;&gt;</panel_attributes>
@@ -379,10 +384,10 @@ shared_ptr&lt;CharacterFrequencyNode&gt; getCharacterNode()</panel_attributes>
   <element>
     <id>UMLClass</id>
     <coordinates>
-      <x>1467</x>
-      <y>477</y>
-      <w>333</w>
-      <h>153</h>
+      <x>1304</x>
+      <y>504</y>
+      <w>296</w>
+      <h>136</h>
     </coordinates>
     <panel_attributes>CharacterPriorityQueueTreeBranch
 bg=yellow
@@ -401,13 +406,85 @@ shared_ptr&lt;CharacterPriorityQueueTreeNode&gt; getRight()</panel_attributes>
   <element>
     <id>Relation</id>
     <coordinates>
-      <x>1485</x>
-      <y>423</y>
-      <w>81</w>
-      <h>72</h>
+      <x>1320</x>
+      <y>456</y>
+      <w>72</w>
+      <h>64</h>
     </coordinates>
     <panel_attributes>lt=.&gt;
 &lt;&lt;extends&gt;&gt;</panel_attributes>
     <additional_attributes>10.0;60.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>976</x>
+      <y>824</y>
+      <w>304</w>
+      <h>112</h>
+    </coordinates>
+    <panel_attributes>StreamScanner
+--
+
+--
+string streamScannerBuffer;
+StreamScanner()
+virtual ~StreamScanner()
+bool scanStream(istream&amp; streamIn)
+virtual bool bufferHandle(string&amp; streamBuffer, bool final)</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>1768</x>
+      <y>192</y>
+      <w>344</w>
+      <h>152</h>
+    </coordinates>
+    <panel_attributes>Extractor : StreamScanner
+bg=green
+--
+shared_ptr&lt;CharacterToBinaryTable&gt; characterToBinaryTablePtr
+string streamBufferOut
+ostream streamOut
+--
+Compressor()
+~Compressor()
+void set(shared_ptr&lt;CharacterToBinaryTable&gt; tablePtr)
+bool stream(istream&amp; streamIn, ostream&amp; streamOut)
+bool bufferHandle(string&amp; streamBuffer, bool final)
+bool bufferOutHandle(string&amp; streamBufferOut, bool final)</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>Relation</id>
+    <coordinates>
+      <x>1808</x>
+      <y>336</y>
+      <w>24</w>
+      <h>344</h>
+    </coordinates>
+    <panel_attributes>lt=&lt;-</panel_attributes>
+    <additional_attributes>10.0;410.0;10.0;10.0</additional_attributes>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>336</x>
+      <y>640</y>
+      <w>192</w>
+      <h>96</h>
+    </coordinates>
+    <panel_attributes>FileData
+bg=orange
+--
+unsigned int fileSize;
+--
+FileData()
+~FileData()
+bool stream(istream&amp; streamIn)
+unsigned int getFileSize()</panel_attributes>
+    <additional_attributes/>
   </element>
 </diagram>
